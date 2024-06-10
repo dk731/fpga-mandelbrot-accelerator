@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
 
-members = ["fpga-mond-linux-driver", "fpga-mond-tcp-proxy"]
+members = ["fpga-mand-linux-driver", "fpga-mand-tcp-proxy"]

@@ -3,9 +3,9 @@
 version = 3
 
 [[package]]
-name = "fpga-mond-linux-driver"
+name = "fpga-mand-linux-driver"
 version = "0.1.0"
 
 [[package]]
-name = "fpga-mond-tcp-proxy"
+name = "fpga-mand-tcp-proxy"
 version = "0.1.0"
