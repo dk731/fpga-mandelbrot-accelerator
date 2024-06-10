@@ -18,7 +18,7 @@ entity multiply_block is
         i_y : in signed(INPUT_RESOLUTION - 1 downto 0);
 
         -- Outputs
-        o_result : out signed(INPUT_RESOLUTION downto 0);
+        o_result : out signed(INPUT_RESOLUTION - 1 downto 0);
         o_valid : out std_logic
     );
 end entity;
@@ -27,20 +27,19 @@ architecture RTL of multiply_block is
     constant MULT_SIZE : natural := INPUT_RESOLUTION * 2;
     type t_loop_state is (s_idle, s_mult_logic, s_done);
 
-    signal loop_state, loop_state_next : t_loop_state := s_idle;
+    signal loop_state_reg, loop_state_next : t_loop_state := s_idle;
 
     signal x_reg, x_next : signed(i_x'range);
     signal y_reg, y_next : signed(i_y'range);
 
     signal mult_res : signed(MULT_SIZE - 1 downto 0);
     signal result_reg, result_next : signed(o_result'range);
-
     signal valid_reg, valid_next : std_logic;
 begin
     process (clk)
     begin
         if rising_edge(clk) then
-            loop_state <= loop_state_next;
+            loop_state_reg <= loop_state_next;
 
             x_reg <= x_next;
             y_reg <= y_next;
@@ -53,7 +52,7 @@ begin
     process (all)
     begin
         -- default
-        loop_state_next <= loop_state;
+        loop_state_next <= loop_state_reg;
 
         x_next <= x_reg;
         y_next <= y_reg;
@@ -63,13 +62,14 @@ begin
 
         -- Check if reset is active
         if sync_reset = '1' then
+            -- Reset state machine
             loop_state_next <= s_idle;
-            x_next <= (others => '0');
-            y_next <= (others => '0');
+
+            -- Reset outputs
             result_next <= (others => '0');
             valid_next <= '0';
         else
-            case loop_state is
+            case loop_state_reg is
                 when s_idle =>
 
                     if i_start = '1' then
@@ -82,7 +82,7 @@ begin
                     -- THIS CAN BE CHANGED TO OTHER MULTIPLICATION ALGORITHMS
 
                     -- <Basic Multiplication>
-                    result_next <= mult_res(MULT_SIZE - 1 downto MULT_SIZE - INPUT_RESOLUTION - 1);
+                    result_next <= mult_res(MULT_SIZE - 1 downto MULT_SIZE - INPUT_RESOLUTION);
                     loop_state_next <= s_done;
                     -- </Basic Multiplication>
 
