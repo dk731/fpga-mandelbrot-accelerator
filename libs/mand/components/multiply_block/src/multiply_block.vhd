@@ -14,8 +14,8 @@ entity multiply_block is
         -- Start signal, loads x and y into the block and starts the multiplication
         i_start : in std_logic;
 
-        i_x : in signed(INPUT_RESOLUTION downto 0);
-        i_y : in signed(INPUT_RESOLUTION downto 0);
+        i_x : in signed(INPUT_RESOLUTION - 1 downto 0);
+        i_y : in signed(INPUT_RESOLUTION - 1 downto 0);
 
         -- Outputs
         o_result : out signed(INPUT_RESOLUTION downto 0);
@@ -24,7 +24,7 @@ entity multiply_block is
 end entity;
 
 architecture RTL of multiply_block is
-    constant MULT_SIZE : natural := INPUT_RESOLUTION * 2 + 1;
+    constant MULT_SIZE : natural := INPUT_RESOLUTION * 2;
     type t_loop_state is (s_idle, s_mult_logic, s_done);
 
     signal loop_state, loop_state_next : t_loop_state := s_idle;
@@ -32,7 +32,7 @@ architecture RTL of multiply_block is
     signal x_reg, x_next : signed(i_x'range);
     signal y_reg, y_next : signed(i_y'range);
 
-    signal mult_res : signed(MULT_SIZE downto 0);
+    signal mult_res : signed(MULT_SIZE - 1 downto 0);
     signal result_reg, result_next : signed(o_result'range);
 
     signal valid_reg, valid_next : std_logic;
@@ -49,17 +49,6 @@ begin
             valid_reg <= valid_next;
         end if;
     end process;
-
-    -- process (sync_reset)
-    -- begin
-    --     if sync_reset = '1' then
-    --         loop_state <= s_idle;
-    --         x_reg <= (others => '0');
-    --         y_reg <= (others => '0');
-    --         result_reg <= (others => '0');
-    --         valid_reg <= '0';
-    --     end if;
-    -- end process;
 
     process (all)
     begin
@@ -93,7 +82,7 @@ begin
                     -- THIS CAN BE CHANGED TO OTHER MULTIPLICATION ALGORITHMS
 
                     -- <Basic Multiplication>
-                    result_next <= mult_res(MULT_SIZE downto MULT_SIZE - INPUT_RESOLUTION);
+                    result_next <= mult_res(MULT_SIZE - 1 downto MULT_SIZE - INPUT_RESOLUTION - 1);
                     loop_state_next <= s_done;
                     -- </Basic Multiplication>
 

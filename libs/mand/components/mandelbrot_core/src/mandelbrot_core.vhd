@@ -7,10 +7,9 @@ use ieee.numeric_std.all;
 -- https://en.wikipedia.org/wiki/Mandelbrot_set
 
 entity mandelbrot_core is
-    constant ITERATION_RESOLUTION : natural := 64; -- long unsigned
-
     generic (
-        INPUT_RESOLUTION : natural := 32
+        INPUT_RESOLUTION : natural := 32;
+        constant ITERATIONS_RESOLUTION : natural := 64; -- long unsigned
     );
     port (
         clk : in std_logic;
@@ -25,10 +24,10 @@ entity mandelbrot_core is
 
         i_x : in signed(INPUT_RESOLUTION downto 0);
         i_y : in signed(INPUT_RESOLUTION downto 0);
-        i_iterations_max : in unsigned(ITERATION_RESOLUTION - 1 downto 0);
+        i_iterations_max : in unsigned(ITERATIONS_RESOLUTION - 1 downto 0);
 
         -- Outputs
-        o_result : out unsigned(ITERATION_RESOLUTION - 1 downto 0);
+        o_result : out unsigned(ITERATIONS_RESOLUTION - 1 downto 0);
 
         -- when calculation is done done_status is high and the result can be read
         o_done_status : out std_logic
