@@ -58,6 +58,7 @@ end entity;
 
 architecture RTL of mandelbrot_cluser is
 
+    signal core_start : std_logic_vector(CORES_COUNT - 1 downto 0);
     signal command_status_reg, command_status_next : std_logic_vector(NORMAL_REG_SIZE - 1 downto 0);
     signal cluster_busy_reg, cluster_busy_next : std_logic;
 
@@ -101,6 +102,28 @@ begin
             end if;
         end if;
     end process;
+
+    -- MANDELBROT_CLUSTER : for i in 0 to CORES_COUNT - 1 generate
+    --     MANDELBROT_CORE : entity mand.mandelbrot_core
+    --         generic map(
+    --             FIXED_SIZE => FIXED_SIZE,
+    --             FIXED_INTEGER_SIZE => FIXED_INTEGER_SIZE,
+    --             ITERATIONS_SIZE => ITERATIONS_SIZE
+    --         )
+    --         port map(
+    --             clk => clk,
+    --             sync_reset => sync_reset,
+
+    --             i_start => core_start(i),
+
+    --             i_x => i_x,
+    --             i_y => i_y,
+
+    --             o_result => mult_out_reg,
+    --             o_valid => mult_valid_reg
+    --         );
+
+    -- end generate;
 
     -- Outputs
     o_fixed_integer_size <= std_logic_vector(to_unsigned(FIXED_INTEGER_SIZE, NORMAL_REG_SIZE));

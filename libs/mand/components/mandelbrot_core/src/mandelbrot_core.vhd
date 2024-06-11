@@ -27,8 +27,8 @@ use ieee.numeric_std.all;
 
 entity mandelbrot_core is
     generic (
+        FIXED_SIZE : natural := 128; -- Size of the input i_x and i_y values
         FIXED_INTEGER_SIZE : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
-        FIXED_SIZE : natural := 512; -- Size of the input i_x and i_y values
 
         ITERATIONS_SIZE : natural := 64 -- Size of the output iterations value (unsigned long by default)
     );
@@ -51,6 +51,8 @@ entity mandelbrot_core is
         -- Outputs
         o_result : out unsigned(ITERATIONS_SIZE - 1 downto 0);
 
+        -- Core is busy when calculation is in progress
+        o_busy : out std_logic;
         -- when calculation is done done_status is high and the result can be read
         o_valid : out std_logic
     );
@@ -74,6 +76,7 @@ architecture RTL of mandelbrot_core is
     signal mult_y_reg, mult_y_next : signed(i_y'range) := (others => '0');
 
     signal mult_out_reg : signed(i_x'range) := (others => '0');
+    signal mult_busy_reg : std_logic := '0';
     signal mult_valid_reg : std_logic := '0';
 
     -- Algorithm
@@ -85,25 +88,10 @@ architecture RTL of mandelbrot_core is
 
     -- Output buffers
     signal result_reg, result_next : unsigned(o_result'range) := (others => '0');
+    signal busy_reg, busy_next : std_logic := '0';
     signal valid_reg, valid_next : std_logic := '0';
 
 begin
-    MULT_BLOCK : entity mand.multiply_block
-        generic map(
-            FIXED_SIZE => FIXED_SIZE
-        )
-        port map(
-            clk => clk,
-            sync_reset => sync_reset,
-            i_start => mult_start_reg,
-
-            i_x => mult_x_reg,
-            i_y => mult_y_reg,
-
-            o_result => mult_out_reg,
-            o_valid => mult_valid_reg
-        );
-
     -- Registers
     process (clk)
     begin
@@ -127,6 +115,7 @@ begin
                 y_squared_reg <= (others => '0');
 
                 result_reg <= (others => '0');
+                busy_reg <= '0';
                 valid_reg <= '0';
             else
                 -- Loop
@@ -150,10 +139,28 @@ begin
 
                 -- Outputs
                 result_reg <= result_next;
+                busy_reg <= busy_next;
                 valid_reg <= valid_next;
             end if;
         end if;
     end process;
+
+    MULT_BLOCK : entity mand.multiply_block
+        generic map(
+            FIXED_SIZE => FIXED_SIZE
+        )
+        port map(
+            clk => clk,
+            sync_reset => sync_reset,
+            i_start => mult_start_reg,
+
+            i_x => mult_x_reg,
+            i_y => mult_y_reg,
+
+            o_result => mult_out_reg,
+            o_busy => mult_busy_reg,
+            o_valid => mult_valid_reg
+        );
 
     -- Main loop state machine
     process (all)
@@ -173,6 +180,7 @@ begin
         mult_x_next <= mult_x_reg;
         mult_y_next <= mult_y_reg;
         result_next <= result_reg;
+        busy_next <= busy_reg;
         valid_next <= valid_reg;
 
         case loop_state_reg is
@@ -192,6 +200,9 @@ begin
 
                     -- Reset outputs
                     result_next <= (others => '0');
+
+                    -- Set status flags
+                    busy_next <= '1';
                     valid_next <= '0';
 
                     -- Start calculation
@@ -199,16 +210,21 @@ begin
                 end if;
 
             when while_check_start =>
-                -- Load x^2 and start multiplication
-                mult_x_next <= x_reg;
-                mult_y_next <= x_reg;
-                mult_start_next <= '1';
 
-                loop_state_next <= square_x;
+                -- Wait for multiplication block to be ready
+                if mult_busy_reg = '0' then
+                    -- Load x^2 and start multiplication
+                    mult_x_next <= x_reg;
+                    mult_y_next <= x_reg;
+                    mult_start_next <= '1';
+
+                    loop_state_next <= square_x;
+                end if;
 
             when square_x =>
 
-                if mult_valid_reg = '1' then
+                -- Wait for multiplication to finish multiplication
+                if mult_valid_reg = '1' and mult_busy_reg = '0' then
                     -- Save x^2
                     x_squared_next <= mult_out_reg;
 
@@ -223,7 +239,7 @@ begin
                 -- TODO: This can be merged to while_check_end
             when square_y =>
 
-                if mult_valid_reg = '1' then
+                if mult_valid_reg = '1' and mult_busy_reg = '0' then
                     -- Save y^2
                     y_squared_next <= mult_out_reg;
 
@@ -232,6 +248,7 @@ begin
 
             when while_check_end =>
 
+                -- Check if the current point is inbounds and the iteration limit is not reached
                 if x_squared_reg + y_squared_reg <= BOUND_RANGE and iterations_reg < max_iterations_reg then
                     -- Save x_temp = x^2 - y^2 + x0
                     x_temp_next <= x_squared_reg - y_squared_reg + x0_reg;
@@ -249,7 +266,7 @@ begin
             when loop_body =>
 
                 -- Wait for x * y multiplication to finish
-                if mult_valid_reg = '1' then
+                if mult_valid_reg = '1' and mult_busy_reg = '0' then
                     -- Save y = 2 * x * y + y0
                     y_next <= (mult_out_reg(mult_out_reg'length - 1 downto 1) & "0") + y0_reg;
                     x_next <= x_temp_reg;
@@ -259,19 +276,19 @@ begin
                 end if;
 
             when s_done =>
-                -- Calculation is done
+                -- Calculation is done, save the result and set the status flags
                 result_next <= iterations_reg;
+                busy_next <= '0';
                 valid_next <= '1';
 
                 loop_state_next <= s_idle;
 
-            when others =>
-                null;
         end case;
 
     end process;
 
     -- Output
     o_result <= result_reg;
+    o_busy <= busy_reg;
     o_valid <= valid_reg;
 end architecture;
