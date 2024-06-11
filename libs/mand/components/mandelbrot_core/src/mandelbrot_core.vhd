@@ -27,10 +27,10 @@ use ieee.numeric_std.all;
 
 entity mandelbrot_core is
     generic (
-        FIXED_INTEGER_BITS : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
-        INPUT_RESOLUTION : natural := 512; -- Size of the input i_x and i_y values
+        FIXED_INTEGER_SIZE : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
+        FIXED_SIZE : natural := 512; -- Size of the input i_x and i_y values
 
-        ITERATIONS_RESOLUTION : natural := 64 -- Size of the output iterations value (unsigned long by default)
+        ITERATIONS_SIZE : natural := 64 -- Size of the output iterations value (unsigned long by default)
     );
     port (
         clk : in std_logic;
@@ -44,12 +44,12 @@ entity mandelbrot_core is
         -- - starts the calculation
         i_start : in std_logic;
 
-        i_x : in signed(INPUT_RESOLUTION - 1 downto 0);
-        i_y : in signed(INPUT_RESOLUTION - 1 downto 0);
-        i_iterations_max : in unsigned(ITERATIONS_RESOLUTION - 1 downto 0);
+        i_x : in signed(FIXED_SIZE - 1 downto 0);
+        i_y : in signed(FIXED_SIZE - 1 downto 0);
+        i_iterations_max : in unsigned(ITERATIONS_SIZE - 1 downto 0);
 
         -- Outputs
-        o_result : out unsigned(ITERATIONS_RESOLUTION - 1 downto 0);
+        o_result : out unsigned(ITERATIONS_SIZE - 1 downto 0);
 
         -- when calculation is done done_status is high and the result can be read
         o_valid : out std_logic
@@ -61,7 +61,7 @@ architecture RTL of mandelbrot_core is
     type t_loop_state is (s_idle, while_check_start, square_x, square_y, while_check_end, loop_body, s_done);
 
     -- Constants
-    constant BOUND_RANGE : signed(i_x'range) := to_signed(4, FIXED_INTEGER_BITS) & to_signed(0, INPUT_RESOLUTION - FIXED_INTEGER_BITS);
+    constant BOUND_RANGE : signed(i_x'range) := to_signed(4, FIXED_INTEGER_SIZE) & to_signed(0, FIXED_SIZE - FIXED_INTEGER_SIZE);
 
     -- Loop
     signal loop_state_reg, loop_state_next : t_loop_state := s_idle;
@@ -90,7 +90,7 @@ architecture RTL of mandelbrot_core is
 begin
     MULT_BLOCK : entity mand.multiply_block
         generic map(
-            INPUT_RESOLUTION => INPUT_RESOLUTION
+            FIXED_SIZE => FIXED_SIZE
         )
         port map(
             clk => clk,

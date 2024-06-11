@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity multiply_block is
     generic (
-        INPUT_RESOLUTION : natural := 32
+        FIXED_SIZE : natural := 32
     );
     port (
         clk : in std_logic;
@@ -14,17 +14,17 @@ entity multiply_block is
         -- Start signal, loads x and y into the block and starts the multiplication
         i_start : in std_logic;
 
-        i_x : in signed(INPUT_RESOLUTION - 1 downto 0);
-        i_y : in signed(INPUT_RESOLUTION - 1 downto 0);
+        i_x : in signed(FIXED_SIZE - 1 downto 0);
+        i_y : in signed(FIXED_SIZE - 1 downto 0);
 
         -- Outputs
-        o_result : out signed(INPUT_RESOLUTION - 1 downto 0);
+        o_result : out signed(FIXED_SIZE - 1 downto 0);
         o_valid : out std_logic
     );
 end entity;
 
 architecture RTL of multiply_block is
-    constant MULT_SIZE : natural := INPUT_RESOLUTION * 2;
+    constant MULT_SIZE : natural := FIXED_SIZE * 2;
     type t_loop_state is (s_idle, s_mult_logic, s_done);
 
     signal loop_state_reg, loop_state_next : t_loop_state := s_idle;
@@ -82,7 +82,7 @@ begin
                     -- THIS CAN BE CHANGED TO OTHER MULTIPLICATION ALGORITHMS
 
                     -- <Basic Multiplication>
-                    result_next <= mult_res(MULT_SIZE - 1 downto MULT_SIZE - INPUT_RESOLUTION);
+                    result_next <= mult_res(MULT_SIZE - 1 downto MULT_SIZE - FIXED_SIZE);
                     loop_state_next <= s_done;
                     -- </Basic Multiplication>
 
