@@ -108,28 +108,50 @@ begin
     process (clk)
     begin
         if rising_edge(clk) then
-            -- Loop
-            loop_state_reg <= loop_state_next;
-            max_iterations_reg <= max_iterations_next;
-            iterations_reg <= iterations_next;
+            if sync_reset = '1' then
+                -- Reset
+                loop_state_reg <= s_idle;
+                max_iterations_reg <= (others => '0');
+                iterations_reg <= (others => '0');
 
-            -- Multiplier buffers
-            mult_start_reg <= mult_start_next;
-            mult_x_reg <= mult_x_next;
-            mult_y_reg <= mult_y_next;
+                mult_start_reg <= '0';
+                mult_x_reg <= (others => '0');
+                mult_y_reg <= (others => '0');
 
-            -- Algorithm
-            x0_reg <= x0_next;
-            y0_reg <= y0_next;
-            x_reg <= x_next;
-            y_reg <= y_next;
-            x_temp_reg <= x_temp_next;
-            x_squared_reg <= x_squared_next;
-            y_squared_reg <= y_squared_next;
+                x0_reg <= (others => '0');
+                y0_reg <= (others => '0');
+                x_reg <= (others => '0');
+                y_reg <= (others => '0');
+                x_temp_reg <= (others => '0');
+                x_squared_reg <= (others => '0');
+                y_squared_reg <= (others => '0');
 
-            -- Outputs
-            result_reg <= result_next;
-            valid_reg <= valid_next;
+                result_reg <= (others => '0');
+                valid_reg <= '0';
+            else
+                -- Loop
+                loop_state_reg <= loop_state_next;
+                max_iterations_reg <= max_iterations_next;
+                iterations_reg <= iterations_next;
+
+                -- Multiplier buffers
+                mult_start_reg <= mult_start_next;
+                mult_x_reg <= mult_x_next;
+                mult_y_reg <= mult_y_next;
+
+                -- Algorithm
+                x0_reg <= x0_next;
+                y0_reg <= y0_next;
+                x_reg <= x_next;
+                y_reg <= y_next;
+                x_temp_reg <= x_temp_next;
+                x_squared_reg <= x_squared_next;
+                y_squared_reg <= y_squared_next;
+
+                -- Outputs
+                result_reg <= result_next;
+                valid_reg <= valid_next;
+            end if;
         end if;
     end process;
 
@@ -153,109 +175,100 @@ begin
         result_next <= result_reg;
         valid_next <= valid_reg;
 
-        if sync_reset = '1' then
-            -- Reset state machine
-            loop_state_next <= s_idle;
+        case loop_state_reg is
+            when s_idle =>
 
-            -- Reset outputs
-            result_next <= (others => '0');
-            valid_next <= '0';
+                if i_start = '1' then
+                    -- Load inputs
+                    x0_next <= i_x;
+                    y0_next <= i_y;
 
-        else
-            case loop_state_reg is
-                when s_idle =>
+                    max_iterations_next <= i_iterations_max;
 
-                    if i_start = '1' then
-                        -- Load inputs
-                        x0_next <= i_x;
-                        y0_next <= i_y;
+                    -- Load initial values
+                    x_next <= (others => '0');
+                    y_next <= (others => '0');
+                    iterations_next <= (others => '0');
 
-                        max_iterations_next <= i_iterations_max;
+                    -- Reset outputs
+                    result_next <= (others => '0');
+                    valid_next <= '0';
 
-                        -- Load initial values
-                        x_next <= (others => '0');
-                        y_next <= (others => '0');
-                        iterations_next <= (others => '0');
+                    -- Start calculation
+                    loop_state_next <= while_check_start;
+                end if;
 
-                        -- Reset outputs
-                        result_next <= (others => '0');
-                        valid_next <= '0';
+            when while_check_start =>
+                -- Load x^2 and start multiplication
+                mult_x_next <= x_reg;
+                mult_y_next <= x_reg;
+                mult_start_next <= '1';
 
-                        -- Start calculation
-                        loop_state_next <= while_check_start;
-                    end if;
+                loop_state_next <= square_x;
 
-                when while_check_start =>
-                    -- Load x^2 and start multiplication
-                    mult_x_next <= x_reg;
-                    mult_y_next <= x_reg;
+            when square_x =>
+
+                if mult_valid_reg = '1' then
+                    -- Save x^2
+                    x_squared_next <= mult_out_reg;
+
+                    -- Load y^2 and start multiplication
+                    mult_x_next <= y_reg;
+                    mult_y_next <= y_reg;
                     mult_start_next <= '1';
 
-                    loop_state_next <= square_x;
+                    loop_state_next <= square_y;
+                end if;
 
-                when square_x =>
+                -- TODO: This can be merged to while_check_end
+            when square_y =>
 
-                    if mult_valid_reg = '1' then
-                        -- Save x^2
-                        x_squared_next <= mult_out_reg;
+                if mult_valid_reg = '1' then
+                    -- Save y^2
+                    y_squared_next <= mult_out_reg;
 
-                        -- Load y^2 and start multiplication
-                        mult_x_next <= y_reg;
-                        mult_y_next <= y_reg;
-                        mult_start_next <= '1';
+                    loop_state_next <= while_check_end;
+                end if;
 
-                        loop_state_next <= square_y;
-                    end if;
+            when while_check_end =>
 
-                    -- TODO: This can be merged to while_check_end
-                when square_y =>
+                if x_squared_reg + y_squared_reg <= BOUND_RANGE and iterations_reg < max_iterations_reg then
+                    -- Save x_temp = x^2 - y^2 + x0
+                    x_temp_next <= x_squared_reg - y_squared_reg + x0_reg;
 
-                    if mult_valid_reg = '1' then
-                        -- Save y^2
-                        y_squared_next <= mult_out_reg;
+                    -- Load x * y
+                    mult_x_next <= x_reg;
+                    mult_y_next <= y_reg;
+                    mult_start_next <= '1';
 
-                        loop_state_next <= while_check_end;
-                    end if;
+                    loop_state_next <= loop_body;
+                else
+                    loop_state_next <= s_done;
+                end if;
 
-                when while_check_end =>
+            when loop_body =>
 
-                    if x_squared_reg + y_squared_reg <= BOUND_RANGE and iterations_reg < max_iterations_reg then
-                        -- Save x_temp = x^2 - y^2 + x0
-                        x_temp_next <= x_squared_reg - y_squared_reg + x0_reg;
+                -- Wait for x * y multiplication to finish
+                if mult_valid_reg = '1' then
+                    -- Save y = 2 * x * y + y0
+                    y_next <= (mult_out_reg(mult_out_reg'length - 1 downto 1) & "0") + y0_reg;
+                    x_next <= x_temp_reg;
+                    iterations_next <= iterations_reg + 1;
 
-                        -- Load x * y
-                        mult_x_next <= x_reg;
-                        mult_y_next <= y_reg;
-                        mult_start_next <= '1';
+                    loop_state_next <= while_check_start;
+                end if;
 
-                        loop_state_next <= loop_body;
-                    else
-                        loop_state_next <= s_done;
-                    end if;
+            when s_done =>
+                -- Calculation is done
+                result_next <= iterations_reg;
+                valid_next <= '1';
 
-                when loop_body =>
+                loop_state_next <= s_idle;
 
-                    -- Wait for x * y multiplication to finish
-                    if mult_valid_reg = '1' then
-                        -- Save y = 2 * x * y + y0
-                        y_next <= (mult_out_reg(mult_out_reg'length - 1 downto 1) & "0") + y0_reg;
-                        x_next <= x_temp_reg;
-                        iterations_next <= iterations_reg + 1;
+            when others =>
+                null;
+        end case;
 
-                        loop_state_next <= while_check_start;
-                    end if;
-
-                when s_done =>
-                    -- Calculation is done
-                    result_next <= iterations_reg;
-                    valid_next <= '1';
-
-                    loop_state_next <= s_idle;
-
-                when others =>
-                    null;
-            end case;
-        end if;
     end process;
 
     -- Output

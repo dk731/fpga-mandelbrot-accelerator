@@ -39,13 +39,23 @@ begin
     process (clk)
     begin
         if rising_edge(clk) then
-            loop_state_reg <= loop_state_next;
+            if sync_reset = '1' then
+                loop_state_reg <= s_idle;
 
-            x_reg <= x_next;
-            y_reg <= y_next;
+                x_reg <= (others => '0');
+                y_reg <= (others => '0');
 
-            result_reg <= result_next;
-            valid_reg <= valid_next;
+                result_reg <= (others => '0');
+                valid_reg <= '0';
+            else
+                loop_state_reg <= loop_state_next;
+
+                x_reg <= x_next;
+                y_reg <= y_next;
+
+                result_reg <= result_next;
+                valid_reg <= valid_next;
+            end if;
         end if;
     end process;
 
@@ -53,47 +63,36 @@ begin
     begin
         -- default
         loop_state_next <= loop_state_reg;
-
         x_next <= x_reg;
         y_next <= y_reg;
-
         result_next <= result_reg;
         valid_next <= valid_reg;
 
-        -- Check if reset is active
-        if sync_reset = '1' then
-            -- Reset state machine
-            loop_state_next <= s_idle;
+        case loop_state_reg is
+            when s_idle =>
 
-            -- Reset outputs
-            result_next <= (others => '0');
-            valid_next <= '0';
-        else
-            case loop_state_reg is
-                when s_idle =>
+                if i_start = '1' then
+                    x_next <= i_x;
+                    y_next <= i_y;
+                    valid_next <= '0';
+                    loop_state_next <= s_mult_logic;
+                end if;
+            when s_mult_logic =>
+                -- THIS CAN BE CHANGED TO OTHER MULTIPLICATION ALGORITHMS
 
-                    if i_start = '1' then
-                        x_next <= i_x;
-                        y_next <= i_y;
-                        valid_next <= '0';
-                        loop_state_next <= s_mult_logic;
-                    end if;
-                when s_mult_logic =>
-                    -- THIS CAN BE CHANGED TO OTHER MULTIPLICATION ALGORITHMS
+                -- <Basic Multiplication>
+                result_next <= mult_res(MULT_SIZE - 1 downto MULT_SIZE - FIXED_SIZE);
+                loop_state_next <= s_done;
+                -- </Basic Multiplication>
 
-                    -- <Basic Multiplication>
-                    result_next <= mult_res(MULT_SIZE - 1 downto MULT_SIZE - FIXED_SIZE);
-                    loop_state_next <= s_done;
-                    -- </Basic Multiplication>
+            when s_done =>
+                valid_next <= '1';
+                loop_state_next <= s_idle;
 
-                when s_done =>
-                    valid_next <= '1';
-                    loop_state_next <= s_idle;
+            when others =>
+                null;
+        end case;
 
-                when others =>
-                    null;
-            end case;
-        end if;
     end process;
 
     mult_res <= x_reg * y_reg;
