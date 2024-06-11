@@ -268,7 +268,7 @@ begin
                 -- Wait for x * y multiplication to finish
                 if mult_valid_reg = '1' and mult_busy_reg = '0' then
                     -- Save y = 2 * x * y + y0
-                    y_next <= (mult_out_reg(mult_out_reg'length - 1 downto 1) & "0") + y0_reg;
+                    y_next <= (mult_out_reg sll 1) + y0_reg;
                     x_next <= x_temp_reg;
                     iterations_next <= iterations_reg + 1;
 
