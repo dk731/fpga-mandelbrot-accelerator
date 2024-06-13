@@ -3,27 +3,15 @@ library mand;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Commands list:
--- 0x0000 - Reset the core with the address `i_address`
--- 0x0001 - Loads `i_x`, `i_y`, `i_iterations_max` values into the core with the address `i_address` and start core execution
--- 0x0002 - Load result from the core with the address `i_address` into the `o_result` register
-
--- Status list:
--- 0x0000 - Command executed successfully
--- 0x0001 - Unknown command
--- 0x0002 - No such core with the address `i_address`
--- 0x0003 - Core is busy
--- 0xffff - Command is not executed yet
-
 entity mandelbrot_cluser is
     generic (
         -- Free to change
-        CORES_COUNT : natural := 16; -- Number of cores to use
-        FIXED_INTEGER_SIZE : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
-        FIXED_SIZE : natural := 32; -- Size of the input i_x and i_y values
+        CORES_COUNT : natural := 2; -- Number of cores to use
+        FIXED_INTEGER_SIZE : natural := 2; -- Fixed floating point integer bits for the i_x and i_y inputs
+        FIXED_SIZE : natural := 4; -- Size of the input i_x and i_y values
 
         -- Not recommended to change, need to update driver code
-        constant ITERATIONS_SIZE : natural := 64; -- Size of the output iterations value (unsigned long by default)
+        constant ITERATIONS_SIZE : natural := 2; -- Size of the output iterations value (unsigned long by default)
         constant NORMAL_REG_SIZE : natural := 32; -- Size of the normal registers
         constant CORES_STATUS_SIZE : natural := 512 -- Size of registers that hold the status of all cores (should be at least CORES_COUNT bits long)
     );
@@ -64,31 +52,50 @@ architecture RTL of mandelbrot_cluser is
     type array_of_unsigned is array(integer range <>) of unsigned;
 
     -- Input registers
-    signal command_reg, command_next : std_logic_vector(i_command'range);
-    signal address_reg, address_next : std_logic_vector(i_address'range);
-    signal x_reg, x_next, y_reg, y_next : signed(i_x'range);
-    signal iterations_max_reg, iterations_max_next : unsigned(i_iterations_max'range);
+    signal command_reg, command_next : std_logic_vector(i_command'range) := (others => '0');
+    signal address_reg, address_next : std_logic_vector(i_address'range) := (others => '0');
+    signal x_reg, x_next, y_reg, y_next : signed(i_x'range) := (others => '0');
+    signal iterations_max_reg, iterations_max_next : unsigned(i_iterations_max'range) := (others => '0');
 
     -- Cores registers
-    signal core_start_reg, core_start_next : std_logic_vector(CORES_COUNT - 1 downto 0);
+    signal core_start_reg, core_start_next : std_logic_vector(CORES_COUNT - 1 downto 0) := (others => '0');
 
     -- Cores output registers
-    signal core_busy_reg : std_logic_vector(CORES_STATUS_SIZE - 1 downto 0);
-    signal core_valid_reg : std_logic_vector(CORES_STATUS_SIZE - 1 downto 0);
-    signal core_result_reg, core_result_next : std_logic_vector(ITERATIONS_SIZE - 1 downto 0);
+    signal core_busy_reg : std_logic_vector(CORES_STATUS_SIZE - 1 downto 0) := (others => '0');
+    signal core_valid_reg : std_logic_vector(CORES_STATUS_SIZE - 1 downto 0) := (others => '0');
+    signal core_result_reg, core_result_next : std_logic_vector(ITERATIONS_SIZE - 1 downto 0) := (others => '0');
 
     signal cores_results_reg : array_of_unsigned(CORES_COUNT - 1 downto 0)(o_result'range) := (others => (others => '0'));
 
     -- Cluster registers
-    signal command_status_reg, command_status_next : std_logic_vector(NORMAL_REG_SIZE - 1 downto 0);
-    signal cluster_busy_reg, cluster_busy_next : std_logic;
+    signal command_status_reg, command_status_next : std_logic_vector(NORMAL_REG_SIZE - 1 downto 0) := (others => '0');
+    signal cluster_busy_reg, cluster_busy_next : std_logic := '0';
+
 begin
     -- Registers
     process (clk)
     begin
         if rising_edge(clk) then
             if sync_reset = '1' then
+                command_reg <= (others => '0');
+                address_reg <= (others => '0');
+                x_reg <= (others => '0');
+                y_reg <= (others => '0');
+                iterations_max_reg <= (others => '0');
+                core_start_reg <= (others => '0');
+                core_result_reg <= (others => '0');
+                command_status_reg <= (others => '0');
+                cluster_busy_reg <= '0';
             else
+                command_reg <= command_next;
+                address_reg <= address_next;
+                x_reg <= x_next;
+                y_reg <= y_next;
+                iterations_max_reg <= iterations_max_next;
+                core_start_reg <= core_start_next;
+                core_result_reg <= core_result_next;
+                command_status_reg <= command_status_next;
+                cluster_busy_reg <= cluster_busy_next;
             end if;
         end if;
     end process;
@@ -115,7 +122,6 @@ begin
                 o_busy => core_busy_reg(i),
                 o_valid => core_valid_reg(i)
             );
-
     end generate;
 
     -- Outputs
