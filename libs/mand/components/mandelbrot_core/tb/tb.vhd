@@ -20,9 +20,9 @@ entity tb is
         FIXED_INTEGER_SIZE : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
         ITERATIONS_SIZE : natural := 64; -- Size of the output iterations value (unsigned long by default)
 
-        INPUT_X : string; -- X coordinate of the input
-        INPUT_Y : string; -- Y coordinate of the input
-        INPUT_ITERATIONS_MAX string -- Maximum number of iterations
+        INPUT_X : natural := 1; -- X coordinate of the input
+        INPUT_Y : natural := 1; -- Y coordinate of the input
+        INPUT_ITERATIONS_MAX : natural := 100 -- Maximum number of iterations
     );
 end entity;
 
@@ -41,32 +41,16 @@ architecture RTL of tb is
     signal core_start : std_logic := '0';
 
     -- Core Inputs
-    signal core_x : signed(FIXED_SIZE - 1 downto 0);
-    signal core_y : signed(FIXED_SIZE - 1 downto 0);
-    signal core_iterations_max : unsigned(ITERATIONS_SIZE - 1 downto 0);
+    signal core_x : signed(FIXED_SIZE - 1 downto 0) := (others => '0');
+    signal core_y : signed(FIXED_SIZE - 1 downto 0) := (others => '0');
+    signal core_iterations_max : unsigned(ITERATIONS_SIZE - 1 downto 0) := (others => '0');
 
     -- Core Outputs
-    signal core_result : unsigned(ITERATIONS_SIZE - 1 downto 0);
-    signal core_busy : std_logic;
-    signal core_valid : std_logic;
+    signal core_result : unsigned(ITERATIONS_SIZE - 1 downto 0) := (others => '0');
+    signal core_busy : std_logic := '0';
+    signal core_valid : std_logic := '0';
 
     constant ZEROS : unsigned(ITERATIONS_SIZE - 1 downto 0) := (others => '0');
-
-    function hex_string_to_unsigned(hex_str : string) return unsigned is
-        variable result : unsigned((hex_str'length * 4) - 1 downto 0) := (others => '0');
-        variable temp_char : character;
-    begin
-        for i in hex_str'range loop
-            temp_char := hex_str(i);
-            case temp_char is
-                when '0' to '9' => result := result(63 - 4 downto 0) & to_unsigned(character'pos(temp_char) - character'pos('0'), 4);
-                when 'A' to 'F' => result := result(63 - 4 downto 0) & to_unsigned(character'pos(temp_char) - character'pos('A') + 10, 4);
-                when 'a' to 'f' => result := result(63 - 4 downto 0) & to_unsigned(character'pos(temp_char) - character'pos('a') + 10, 4);
-                when others => null;
-            end case;
-        end loop;
-        return result;
-    end function;
 
 begin
     clk <= not clk after CLK_PERIOD/2;
@@ -102,6 +86,7 @@ begin
         ---------------------------------------------------------------------------
         -- Procedures
         ---------------------------------------------------------------------------
+
     begin
         test_runner_setup(runner, runner_cfg);
 
@@ -111,7 +96,7 @@ begin
                 core_reset <= '1';
                 wait for 50 ns;
                 core_reset <= '0';
-                wait for 10 ns;
+                wait for 50 ns;
 
                 check(core_result = ZEROS, "Result after reset: ("
                 & "Expected: " & to_string(ZEROS) & "; "
@@ -125,11 +110,11 @@ begin
                 & "Expected: '0'; "
                 & "Got: " & to_string(core_valid) & ")");
 
-                -- Setup inputs
-                core_x <= hex_string_to_unsigned(INPUT_X);
-                core_y <= hex_string_to_unsigned(INPUT_Y);
-
+                core_x <= to_signed(INPUT_X, FIXED_SIZE);
+                core_y <= to_signed(INPUT_Y, FIXED_SIZE);
                 core_iterations_max <= to_unsigned(INPUT_ITERATIONS_MAX, ITERATIONS_SIZE);
+
+                wait for 50 ns;
 
                 -- Start core
                 core_start <= '1';
@@ -143,6 +128,8 @@ begin
                 check(core_valid = '0', "Valid after start: ("
                 & "Expected: '0'; "
                 & "Got: " & to_string(core_valid) & ")");
+
+                core_start <= '0';
 
                 -- Wait for the core to finish
                 wait until (core_busy = '0' and core_valid = '1') or now >= TIMEOUT;

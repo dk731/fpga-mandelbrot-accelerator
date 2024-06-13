@@ -60,7 +60,7 @@ end entity;
 
 architecture RTL of mandelbrot_core is
     -- Loop state type
-    type t_loop_state is (s_idle, while_check_start, square_x, square_y, while_check_end, loop_body, s_done);
+    type t_loop_state is (s_idle, s_idle_load, s_while_check_start, s_start_mult_x, s_wait_mult_x_load_mult_y, s_start_mult_y, s_wait_mult_y, s_wait_square_y, s_while_check_end, s_start_mult_x_y, s_wait_mult_x_y, s_wait_x_y_load, s_done, s_done_wait);
 
     -- Constants
     constant BOUND_RANGE : signed(i_x'range) := to_signed(4, FIXED_INTEGER_SIZE) & to_signed(0, FIXED_SIZE - FIXED_INTEGER_SIZE);
@@ -147,7 +147,8 @@ begin
 
     MULT_BLOCK : entity mand.multiply_block
         generic map(
-            FIXED_SIZE => FIXED_SIZE
+            FIXED_SIZE => FIXED_SIZE,
+            FIXED_INTEGER_SIZE => FIXED_INTEGER_SIZE
         )
         port map(
             clk => clk,
@@ -176,9 +177,11 @@ begin
         x_temp_next <= x_temp_reg;
         x_squared_next <= x_squared_reg;
         y_squared_next <= y_squared_reg;
-        mult_start_next <= mult_start_reg;
+
+        mult_start_next <= '0';
         mult_x_next <= mult_x_reg;
         mult_y_next <= mult_y_reg;
+
         result_next <= result_reg;
         busy_next <= busy_reg;
         valid_next <= valid_reg;
@@ -206,47 +209,59 @@ begin
                     valid_next <= '0';
 
                     -- Start calculation
-                    loop_state_next <= while_check_start;
+                    loop_state_next <= s_idle_load;
                 end if;
 
-            when while_check_start =>
+            when s_idle_load =>
+                -- Wait for inputs to load
+                loop_state_next <= s_while_check_start;
 
-                -- Wait for multiplication block to be ready
-                if mult_busy_reg = '0' then
-                    -- Load x^2 and start multiplication
-                    mult_x_next <= x_reg;
-                    mult_y_next <= x_reg;
-                    mult_start_next <= '1';
+            when s_while_check_start =>
+                -- Load x^2 multiplication
+                mult_x_next <= x_reg;
+                mult_y_next <= x_reg;
 
-                    loop_state_next <= square_x;
-                end if;
+                loop_state_next <= s_start_mult_x;
 
-            when square_x =>
+            when s_start_mult_x =>
+                -- Start current multiplication
+                mult_start_next <= '1';
 
-                -- Wait for multiplication to finish multiplication
-                if mult_valid_reg = '1' and mult_busy_reg = '0' then
+                loop_state_next <= s_wait_mult_x_load_mult_y;
+
+            when s_wait_mult_x_load_mult_y =>
+                -- Wait for multiplication to start and finish
+                if mult_start_reg = '0' and mult_valid_reg = '1' and mult_busy_reg = '0' then
                     -- Save x^2
                     x_squared_next <= mult_out_reg;
 
-                    -- Load y^2 and start multiplication
+                    -- Load y^2 multiplication
                     mult_x_next <= y_reg;
                     mult_y_next <= y_reg;
-                    mult_start_next <= '1';
 
-                    loop_state_next <= square_y;
+                    loop_state_next <= s_start_mult_y;
                 end if;
 
-                -- TODO: This can be merged to while_check_end
-            when square_y =>
+            when s_start_mult_y =>
+                -- Start current multiplication
+                mult_start_next <= '1';
 
-                if mult_valid_reg = '1' and mult_busy_reg = '0' then
+                loop_state_next <= s_wait_mult_y;
+
+            when s_wait_mult_y =>
+                -- Wait for multiplication to start and finish
+                if mult_start_reg = '0' and mult_valid_reg = '1' and mult_busy_reg = '0' then
                     -- Save y^2
                     y_squared_next <= mult_out_reg;
 
-                    loop_state_next <= while_check_end;
+                    loop_state_next <= s_wait_square_y;
                 end if;
 
-            when while_check_end =>
+            when s_wait_square_y =>
+                -- Wait for y_squared to load
+                loop_state_next <= s_while_check_end;
+
+            when s_while_check_end =>
 
                 -- Check if the current point is inbounds and the iteration limit is not reached
                 if x_squared_reg + y_squared_reg <= BOUND_RANGE and iterations_reg < max_iterations_reg then
@@ -256,33 +271,45 @@ begin
                     -- Load x * y
                     mult_x_next <= x_reg;
                     mult_y_next <= y_reg;
-                    mult_start_next <= '1';
 
-                    loop_state_next <= loop_body;
+                    loop_state_next <= s_start_mult_x_y;
                 else
                     loop_state_next <= s_done;
                 end if;
 
-            when loop_body =>
+            when s_start_mult_x_y =>
+                -- Start current multiplication
+                mult_start_next <= '1';
 
-                -- Wait for x * y multiplication to finish
-                if mult_valid_reg = '1' and mult_busy_reg = '0' then
-                    -- Save y = 2 * x * y + y0
+                loop_state_next <= s_wait_mult_x_y;
+
+            when s_wait_mult_x_y =>
+
+                -- Wait for multiplication to finish multiplication
+                if mult_start_reg = '0' and mult_valid_reg = '1' and mult_busy_reg = '0' then
                     y_next <= (mult_out_reg sll 1) + y0_reg;
                     x_next <= x_temp_reg;
+
                     iterations_next <= iterations_reg + 1;
 
-                    loop_state_next <= while_check_start;
+                    loop_state_next <= s_wait_x_y_load;
                 end if;
+
+            when s_wait_x_y_load =>
+                -- Wait for x and y to load
+                loop_state_next <= s_while_check_start;
 
             when s_done =>
                 -- Calculation is done, save the result and set the status flags
                 result_next <= iterations_reg;
+
+                loop_state_next <= s_done_wait;
+
+            when s_done_wait =>
                 busy_next <= '0';
                 valid_next <= '1';
 
                 loop_state_next <= s_idle;
-
         end case;
 
     end process;

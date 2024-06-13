@@ -90,7 +90,7 @@ def generate_test_benches(
     start_y = start_point[1] + mand_height / 2
     floating_size = fixed_size - fixed_integer_size
 
-    python_mand_image = np.zeros((height, width), dtype=np.uint8)
+    python_mand_image = np.zeros((height, width), dtype=np.float64)
     vuint_configs = []
 
     for row in range(height):
@@ -99,23 +99,37 @@ def generate_test_benches(
             y = start_y - row * mand_height / height
 
             itterations = mand.calculate_mandelbrot(x, y, max_iterations)
+
+            input_x = int(
+                str(
+                    FixedPoint(
+                        x, signed=1, m=fixed_integer_size, n=floating_size, str_base=10
+                    )
+                )
+            )
+            input_y = int(
+                str(
+                    FixedPoint(
+                        y, signed=1, m=fixed_integer_size, n=floating_size, str_base=10
+                    )
+                )
+            )
+
             vuint_configs.append(
                 {
-                    "name": f"___{row};{col};{max_iterations}___",
+                    "name": f"{fixed_size}_{fixed_integer_size}___{row};{col};{max_iterations}___",
                     "generics": {
                         "FIXED_SIZE": fixed_size,
                         "FIXED_INTEGER_SIZE": fixed_integer_size,
                         "ITERATIONS_SIZE": itterations_size,
-                        "INPUT_X": 2147483647,
-                        "INPUT_Y": 1,
+                        "INPUT_X": input_x,
+                        "INPUT_Y": input_y,
                         "INPUT_ITERATIONS_MAX": max_iterations,
                     },
                 }
             )
 
-            python_mand_image[row, col] = 255 - itterations * 255
-
-    print(vuint_configs)
+            python_mand_image[row, col] = itterations
 
     return vuint_configs, python_mand_image
 
@@ -124,14 +138,15 @@ def plot_tests_result(tests_result: list, original_image: np.ndarray) -> None:
     hdl_image = np.zeros_like(original_image)
     for result in tests_result:
         col, row, result = result
-        hdl_image[row, col] = 255 - result * 255
+        hdl_image[row, col] = result
 
     _, ax = plt.subplots(1, 2, figsize=(10, 5))
     ax[0].imshow(original_image)
     ax[0].set_title("Python Mandelbrot")
-    ax[0].grid()
+    ax[0].grid(False)
     ax[1].imshow(hdl_image)
     ax[1].set_title("HDL Mandelbrot")
+    ax[1].grid(False)
 
     plt.show()
 
@@ -175,12 +190,34 @@ def test_result_parser(original_image):
 
 
 test_configs, python_mand_image = generate_test_benches(
-    width=5, fixed_integer_size=4, fixed_size=64
+    width=10, fixed_integer_size=4, fixed_size=31, max_iterations=100
 )
 for config in test_configs:
     prj.library("mand").test_bench("tb").test("test_point_calculation").add_config(
         **config
     )
 
+# TEST_X = 62874
+# TEST_Y = 2611
+# mand.calculate_mandelbrot(
+#     float(FixedPoint(hex(TEST_X), signed=1, m=4, n=12)),
+#     float(FixedPoint(hex(TEST_Y), signed=1, m=4, n=12)),
+#     5,
+# )
+
+# prj.library("mand").test_bench("tb").test("test_point_calculation").add_config(
+#     name="qwe",
+#     generics={
+#         "FIXED_SIZE": 16,
+#         "FIXED_INTEGER_SIZE": 4,
+#         "ITERATIONS_SIZE": 64,
+#         "INPUT_X": TEST_X,
+#         "INPUT_Y": TEST_Y,
+#         "INPUT_ITERATIONS_MAX": 5,
+#     },
+# )
+
+
 # run VUnit simulation
 prj.main(test_result_parser(python_mand_image))
+# prj.main(test_result_parser(np.zeros(1)))
