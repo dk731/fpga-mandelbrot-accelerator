@@ -159,7 +159,7 @@ def test_result_parser(original_image):
 
 
 test_configs, python_mand_image = generate_test_benches(
-    width=5, fixed_integer_size=4, fixed_size=64, max_iterations=100
+    width=10, fixed_integer_size=4, fixed_size=64, max_iterations=100
 )
 for config in test_configs:
     prj.library("mand").test_bench("tb").test("test_point_calculation").add_config(
