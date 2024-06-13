@@ -74,6 +74,7 @@ architecture RTL of mandelbrot_core is
     signal mult_start_reg, mult_start_next : std_logic := '0';
     signal mult_x_reg, mult_x_next : signed(i_x'range) := (others => '0');
     signal mult_y_reg, mult_y_next : signed(i_y'range) := (others => '0');
+    signal mult_overflow_reg : std_logic := '0';
 
     signal mult_out_reg : signed(i_x'range) := (others => '0');
     signal mult_busy_reg : std_logic := '0';
@@ -85,6 +86,7 @@ architecture RTL of mandelbrot_core is
     signal x_temp_reg, x_temp_next : signed(i_x'range) := (others => '0');
     signal x_squared_reg, x_squared_next : signed(i_y'range) := (others => '0');
     signal y_squared_reg, y_squared_next : signed(i_y'range) := (others => '0');
+    signal mult_overflow_flag_reg, mult_overflow_flag_next : std_logic := '0';
 
     -- Output buffers
     signal result_reg, result_next : unsigned(o_result'range) := (others => '0');
@@ -113,6 +115,7 @@ begin
                 x_temp_reg <= (others => '0');
                 x_squared_reg <= (others => '0');
                 y_squared_reg <= (others => '0');
+                mult_overflow_flag_reg <= '0';
 
                 result_reg <= (others => '0');
                 busy_reg <= '0';
@@ -136,6 +139,7 @@ begin
                 x_temp_reg <= x_temp_next;
                 x_squared_reg <= x_squared_next;
                 y_squared_reg <= y_squared_next;
+                mult_overflow_flag_reg <= mult_overflow_flag_next;
 
                 -- Outputs
                 result_reg <= result_next;
@@ -160,13 +164,18 @@ begin
 
             o_result => mult_out_reg,
             o_busy => mult_busy_reg,
-            o_valid => mult_valid_reg
+            o_valid => mult_valid_reg,
+            o_int_overflow => mult_overflow_reg
         );
 
     -- Main loop state machine
     process (all)
     begin
         -- default
+        mult_start_next <= '0';
+        mult_x_next <= mult_x_reg;
+        mult_y_next <= mult_y_reg;
+
         loop_state_next <= loop_state_reg;
         x0_next <= x0_reg;
         y0_next <= y0_reg;
@@ -177,10 +186,7 @@ begin
         x_temp_next <= x_temp_reg;
         x_squared_next <= x_squared_reg;
         y_squared_next <= y_squared_reg;
-
-        mult_start_next <= '0';
-        mult_x_next <= mult_x_reg;
-        mult_y_next <= mult_y_reg;
+        mult_overflow_flag_next <= mult_overflow_flag_reg;
 
         result_next <= result_reg;
         busy_next <= busy_reg;
@@ -207,6 +213,7 @@ begin
                     -- Set status flags
                     busy_next <= '1';
                     valid_next <= '0';
+                    mult_overflow_flag_next <= '0';
 
                     -- Start calculation
                     loop_state_next <= s_idle_load;
@@ -235,6 +242,9 @@ begin
                     -- Save x^2
                     x_squared_next <= mult_out_reg;
 
+                    -- Update multiplication overflow flag
+                    mult_overflow_flag_next <= mult_overflow_flag_reg or mult_overflow_reg;
+
                     -- Load y^2 multiplication
                     mult_x_next <= y_reg;
                     mult_y_next <= y_reg;
@@ -254,6 +264,9 @@ begin
                     -- Save y^2
                     y_squared_next <= mult_out_reg;
 
+                    -- Update multiplication overflow flag
+                    mult_overflow_flag_next <= mult_overflow_flag_reg or mult_overflow_reg;
+
                     loop_state_next <= s_wait_square_y;
                 end if;
 
@@ -264,7 +277,10 @@ begin
             when s_while_check_end =>
 
                 -- Check if the current point is inbounds and the iteration limit is not reached
-                if x_squared_reg + y_squared_reg <= BOUND_RANGE and iterations_reg < max_iterations_reg then
+                if (x_squared_reg + y_squared_reg <= BOUND_RANGE) and
+                    (iterations_reg < max_iterations_reg) and
+                    (mult_overflow_flag_reg = '0')
+                    then
                     -- Save x_temp = x^2 - y^2 + x0
                     x_temp_next <= x_squared_reg - y_squared_reg + x0_reg;
 
@@ -291,6 +307,9 @@ begin
                     x_next <= x_temp_reg;
 
                     iterations_next <= iterations_reg + 1;
+
+                    -- Update multiplication overflow flag
+                    mult_overflow_flag_next <= mult_overflow_flag_reg or mult_overflow_reg;
 
                     loop_state_next <= s_wait_x_y_load;
                 end if;

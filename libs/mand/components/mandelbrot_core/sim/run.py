@@ -36,40 +36,6 @@ prj.library("mand").add_source_file(
 # Add testbench
 prj.library("mand").add_source_file(path.join(MAND_CORE_PATH, "tb", "tb.vhd"))
 
-# FIXED_SIZE : natural := 16; -- Size of the input i_x and i_y values
-# FIXED_INTEGER_SIZE : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
-# ITERATIONS_SIZE : natural := 64; -- Size of the output iterations value (unsigned long by default)
-
-# INPUT_X : natural := 58696; -- X coordinate of the input
-# INPUT_Y : natural := 2474; -- Y coordinate of the input
-# INPUT_ITERATIONS_MAX : natural := 5; -- Maximum number of iterations
-
-# test_points = [
-#     (0xE548, 0x09AA, 3, 5),
-#     (0xF029, 0x09AA, 4, 5),
-#     (0xF256, 0x09AA, 5, 5),
-# ]
-
-# for i, test_point in enumerate(test_points):
-#     prj.library("mand").test_bench("tb").test("test_point_calculation").add_config(
-#         **{
-#             "name": f"___{i};{i}___",
-#             "generics": {
-#                 "FIXED_SIZE": 16,
-#                 "FIXED_INTEGER_SIZE": 4,
-#                 "ITERATIONS_SIZE": 64,
-#                 "INPUT_X": test_point[0],
-#                 "INPUT_Y": test_point[1],
-#                 "INPUT_ITERATIONS_MAX": test_point[3],
-#             },
-#         }
-#     )
-
-
-# prj.library("rtu").test_bench("tb").test("position_coverage").add_config(
-#     name="data_width=32", generics=dict(DATA_WIDTH=32)
-# )
-
 
 def generate_test_benches(
     width=10,
@@ -100,20 +66,17 @@ def generate_test_benches(
 
             itterations = mand.calculate_mandelbrot(x, y, max_iterations)
 
-            input_x = int(
-                str(
-                    FixedPoint(
-                        x, signed=1, m=fixed_integer_size, n=floating_size, str_base=10
-                    )
+            input_x = str(
+                FixedPoint(
+                    x, signed=1, m=fixed_integer_size, n=floating_size, str_base=2
                 )
-            )
-            input_y = int(
-                str(
-                    FixedPoint(
-                        y, signed=1, m=fixed_integer_size, n=floating_size, str_base=10
-                    )
+            ).rjust(2048, "0")
+
+            input_y = str(
+                FixedPoint(
+                    y, signed=1, m=fixed_integer_size, n=floating_size, str_base=2
                 )
-            )
+            ).rjust(2048, "0")
 
             vuint_configs.append(
                 {
@@ -124,7 +87,12 @@ def generate_test_benches(
                         "ITERATIONS_SIZE": itterations_size,
                         "INPUT_X": input_x,
                         "INPUT_Y": input_y,
-                        "INPUT_ITERATIONS_MAX": max_iterations,
+                        "INPUT_ITERATIONS_MAX": "".join(
+                            [
+                                "1" if max_iterations & (1 << i) > 0 else "0"
+                                for i in range(2048)
+                            ]
+                        )[::-1],
                     },
                 }
             )
@@ -148,6 +116,7 @@ def plot_tests_result(tests_result: list, original_image: np.ndarray) -> None:
     ax[1].set_title("HDL Mandelbrot")
     ax[1].grid(False)
 
+    plt.savefig(path.join(RUN_PATH, "results-comp.png"))
     plt.show()
 
 
@@ -190,34 +159,13 @@ def test_result_parser(original_image):
 
 
 test_configs, python_mand_image = generate_test_benches(
-    width=10, fixed_integer_size=4, fixed_size=31, max_iterations=100
+    width=5, fixed_integer_size=4, fixed_size=64, max_iterations=100
 )
 for config in test_configs:
     prj.library("mand").test_bench("tb").test("test_point_calculation").add_config(
         **config
     )
 
-# TEST_X = 62874
-# TEST_Y = 2611
-# mand.calculate_mandelbrot(
-#     float(FixedPoint(hex(TEST_X), signed=1, m=4, n=12)),
-#     float(FixedPoint(hex(TEST_Y), signed=1, m=4, n=12)),
-#     5,
-# )
-
-# prj.library("mand").test_bench("tb").test("test_point_calculation").add_config(
-#     name="qwe",
-#     generics={
-#         "FIXED_SIZE": 16,
-#         "FIXED_INTEGER_SIZE": 4,
-#         "ITERATIONS_SIZE": 64,
-#         "INPUT_X": TEST_X,
-#         "INPUT_Y": TEST_Y,
-#         "INPUT_ITERATIONS_MAX": 5,
-#     },
-# )
-
 
 # run VUnit simulation
 prj.main(test_result_parser(python_mand_image))
-# prj.main(test_result_parser(np.zeros(1)))

@@ -22,8 +22,6 @@ def calculate_mandelbrot(x0, y0, max_itterations) -> float:
 
         tmp_x = x**2 - y**2 + x0
 
-        print(f"{itt}:   x: {x}; y: {y}; temp_x: {tmp_x}; x^2: {x**2}; y^2: {y**2}")
-
         y = 2 * x * y + y0
         x = tmp_x
 

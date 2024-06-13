@@ -20,9 +20,9 @@ entity tb is
         FIXED_INTEGER_SIZE : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
         ITERATIONS_SIZE : natural := 64; -- Size of the output iterations value (unsigned long by default)
 
-        INPUT_X : natural := 1; -- X coordinate of the input
-        INPUT_Y : natural := 1; -- Y coordinate of the input
-        INPUT_ITERATIONS_MAX : natural := 100 -- Maximum number of iterations
+        INPUT_X : signed(2048 - 1 downto 0); -- X coordinate of the input
+        INPUT_Y : signed(2048 - 1 downto 0); -- Y coordinate of the input
+        INPUT_ITERATIONS_MAX : unsigned(2048 - 1 downto 0) -- Maximum number of iterations
     );
 end entity;
 
@@ -80,7 +80,7 @@ begin
     -- Test sequencer
     -----------------------------------------------------------------------------
     process
-        constant TIMEOUT : time := 1000000000 ns;
+        constant TIMEOUT : time := 10000000 ns;
         variable timeout_occurred : boolean := false;
 
         ---------------------------------------------------------------------------
@@ -110,9 +110,9 @@ begin
                 & "Expected: '0'; "
                 & "Got: " & to_string(core_valid) & ")");
 
-                core_x <= to_signed(INPUT_X, FIXED_SIZE);
-                core_y <= to_signed(INPUT_Y, FIXED_SIZE);
-                core_iterations_max <= to_unsigned(INPUT_ITERATIONS_MAX, ITERATIONS_SIZE);
+                core_x <= INPUT_X(FIXED_SIZE - 1 downto 0);
+                core_y <= INPUT_Y(FIXED_SIZE - 1 downto 0);
+                core_iterations_max <= INPUT_ITERATIONS_MAX(ITERATIONS_SIZE - 1 downto 0);
 
                 wait for 50 ns;
 
