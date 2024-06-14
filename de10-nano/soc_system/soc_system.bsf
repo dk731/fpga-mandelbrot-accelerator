@@ -163,7 +163,7 @@ https://fpgasoftware.intel.com/eula.
 		(text "mem_odt" (rect 101 275 244 560)(font "Arial" (color 0 0 0)))
 		(text "mem_dm" (rect 101 291 238 592)(font "Arial" (color 0 0 0)))
 		(text "oct_rzqin" (rect 102 307 258 624)(font "Arial" (color 0 0 0)))
-		(text " system " (rect 253 328 554 666)(font "Arial" ))
+		(text " soc_system " (rect 232 328 536 666)(font "Arial" ))
 		(line (pt 48 32)(pt 144 32)(line_width 1))
 		(line (pt 144 32)(pt 144 328)(line_width 1))
 		(line (pt 48 328)(pt 144 328)(line_width 1))

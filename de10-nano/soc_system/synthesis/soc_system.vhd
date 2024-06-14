@@ -92,6 +92,26 @@ architecture rtl of soc_system is
 		);
 	end component soc_system_hps_0;
 
+	component mand_cluster_avalon_mm is
+		generic (
+			CORES_COUNT        : natural := 2;
+			FIXED_SIZE         : natural := 32;
+			FIXED_INTEGER_SIZE : natural := 5;
+			ITTERATIONS_SIZE   : natural := 32;
+			AVALON_DATA_WIDTH  : natural := 8;
+			NORMAL_REG_SIZE    : natural := 32
+		);
+		port (
+			clk           : in  std_logic                    := 'X';             -- clk
+			avs_address   : in  std_logic_vector(9 downto 0) := (others => 'X'); -- address
+			avs_read      : in  std_logic                    := 'X';             -- read
+			avs_write     : in  std_logic                    := 'X';             -- write
+			avs_writedata : in  std_logic_vector(7 downto 0) := (others => 'X'); -- writedata
+			avs_readdata  : out std_logic_vector(7 downto 0);                    -- readdata
+			reset         : in  std_logic                    := 'X'              -- reset
+		);
+	end component mand_cluster_avalon_mm;
+
 	component altera_avalon_mm_bridge is
 		generic (
 			DATA_WIDTH        : integer := 32;
@@ -107,7 +127,7 @@ architecture rtl of soc_system is
 			s0_waitrequest   : out std_logic;                                        -- waitrequest
 			s0_readdata      : out std_logic_vector(63 downto 0);                    -- readdata
 			s0_readdatavalid : out std_logic;                                        -- readdatavalid
-			s0_burstcount    : in  std_logic_vector(0 downto 0)  := (others => 'X'); -- burstcount
+			s0_burstcount    : in  std_logic_vector(3 downto 0)  := (others => 'X'); -- burstcount
 			s0_writedata     : in  std_logic_vector(63 downto 0) := (others => 'X'); -- writedata
 			s0_address       : in  std_logic_vector(9 downto 0)  := (others => 'X'); -- address
 			s0_write         : in  std_logic                     := 'X';             -- write
@@ -117,7 +137,7 @@ architecture rtl of soc_system is
 			m0_waitrequest   : in  std_logic                     := 'X';             -- waitrequest
 			m0_readdata      : in  std_logic_vector(63 downto 0) := (others => 'X'); -- readdata
 			m0_readdatavalid : in  std_logic                     := 'X';             -- readdatavalid
-			m0_burstcount    : out std_logic_vector(0 downto 0);                     -- burstcount
+			m0_burstcount    : out std_logic_vector(3 downto 0);                     -- burstcount
 			m0_writedata     : out std_logic_vector(63 downto 0);                    -- writedata
 			m0_address       : out std_logic_vector(9 downto 0);                     -- address
 			m0_write         : out std_logic;                                        -- write
@@ -175,13 +195,35 @@ architecture rtl of soc_system is
 			mm_bridge_0_s0_read                                              : out std_logic;                                        -- read
 			mm_bridge_0_s0_readdata                                          : in  std_logic_vector(63 downto 0) := (others => 'X'); -- readdata
 			mm_bridge_0_s0_writedata                                         : out std_logic_vector(63 downto 0);                    -- writedata
-			mm_bridge_0_s0_burstcount                                        : out std_logic_vector(0 downto 0);                     -- burstcount
+			mm_bridge_0_s0_burstcount                                        : out std_logic_vector(3 downto 0);                     -- burstcount
 			mm_bridge_0_s0_byteenable                                        : out std_logic_vector(7 downto 0);                     -- byteenable
 			mm_bridge_0_s0_readdatavalid                                     : in  std_logic                     := 'X';             -- readdatavalid
 			mm_bridge_0_s0_waitrequest                                       : in  std_logic                     := 'X';             -- waitrequest
 			mm_bridge_0_s0_debugaccess                                       : out std_logic                                         -- debugaccess
 		);
 	end component soc_system_mm_interconnect_0;
+
+	component soc_system_mm_interconnect_1 is
+		port (
+			clk_0_clk_clk                                     : in  std_logic                     := 'X';             -- clk
+			mm_bridge_0_reset_reset_bridge_in_reset_reset     : in  std_logic                     := 'X';             -- reset
+			mm_bridge_0_m0_address                            : in  std_logic_vector(9 downto 0)  := (others => 'X'); -- address
+			mm_bridge_0_m0_waitrequest                        : out std_logic;                                        -- waitrequest
+			mm_bridge_0_m0_burstcount                         : in  std_logic_vector(3 downto 0)  := (others => 'X'); -- burstcount
+			mm_bridge_0_m0_byteenable                         : in  std_logic_vector(7 downto 0)  := (others => 'X'); -- byteenable
+			mm_bridge_0_m0_read                               : in  std_logic                     := 'X';             -- read
+			mm_bridge_0_m0_readdata                           : out std_logic_vector(63 downto 0);                    -- readdata
+			mm_bridge_0_m0_readdatavalid                      : out std_logic;                                        -- readdatavalid
+			mm_bridge_0_m0_write                              : in  std_logic                     := 'X';             -- write
+			mm_bridge_0_m0_writedata                          : in  std_logic_vector(63 downto 0) := (others => 'X'); -- writedata
+			mm_bridge_0_m0_debugaccess                        : in  std_logic                     := 'X';             -- debugaccess
+			mand_cluster_avalon_mm_0_avalon_slave_0_address   : out std_logic_vector(9 downto 0);                     -- address
+			mand_cluster_avalon_mm_0_avalon_slave_0_write     : out std_logic;                                        -- write
+			mand_cluster_avalon_mm_0_avalon_slave_0_read      : out std_logic;                                        -- read
+			mand_cluster_avalon_mm_0_avalon_slave_0_readdata  : in  std_logic_vector(7 downto 0)  := (others => 'X'); -- readdata
+			mand_cluster_avalon_mm_0_avalon_slave_0_writedata : out std_logic_vector(7 downto 0)                      -- writedata
+		);
+	end component soc_system_mm_interconnect_1;
 
 	component altera_reset_controller is
 		generic (
@@ -249,56 +291,71 @@ architecture rtl of soc_system is
 		);
 	end component altera_reset_controller;
 
-	signal hps_0_h2f_reset_reset                          : std_logic;                     -- hps_0:h2f_rst_n -> hps_0_h2f_reset_reset:in
-	signal hps_0_h2f_axi_master_awburst                   : std_logic_vector(1 downto 0);  -- hps_0:h2f_AWBURST -> mm_interconnect_0:hps_0_h2f_axi_master_awburst
-	signal hps_0_h2f_axi_master_arlen                     : std_logic_vector(3 downto 0);  -- hps_0:h2f_ARLEN -> mm_interconnect_0:hps_0_h2f_axi_master_arlen
-	signal hps_0_h2f_axi_master_wstrb                     : std_logic_vector(7 downto 0);  -- hps_0:h2f_WSTRB -> mm_interconnect_0:hps_0_h2f_axi_master_wstrb
-	signal hps_0_h2f_axi_master_wready                    : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_wready -> hps_0:h2f_WREADY
-	signal hps_0_h2f_axi_master_rid                       : std_logic_vector(11 downto 0); -- mm_interconnect_0:hps_0_h2f_axi_master_rid -> hps_0:h2f_RID
-	signal hps_0_h2f_axi_master_rready                    : std_logic;                     -- hps_0:h2f_RREADY -> mm_interconnect_0:hps_0_h2f_axi_master_rready
-	signal hps_0_h2f_axi_master_awlen                     : std_logic_vector(3 downto 0);  -- hps_0:h2f_AWLEN -> mm_interconnect_0:hps_0_h2f_axi_master_awlen
-	signal hps_0_h2f_axi_master_wid                       : std_logic_vector(11 downto 0); -- hps_0:h2f_WID -> mm_interconnect_0:hps_0_h2f_axi_master_wid
-	signal hps_0_h2f_axi_master_arcache                   : std_logic_vector(3 downto 0);  -- hps_0:h2f_ARCACHE -> mm_interconnect_0:hps_0_h2f_axi_master_arcache
-	signal hps_0_h2f_axi_master_wvalid                    : std_logic;                     -- hps_0:h2f_WVALID -> mm_interconnect_0:hps_0_h2f_axi_master_wvalid
-	signal hps_0_h2f_axi_master_araddr                    : std_logic_vector(29 downto 0); -- hps_0:h2f_ARADDR -> mm_interconnect_0:hps_0_h2f_axi_master_araddr
-	signal hps_0_h2f_axi_master_arprot                    : std_logic_vector(2 downto 0);  -- hps_0:h2f_ARPROT -> mm_interconnect_0:hps_0_h2f_axi_master_arprot
-	signal hps_0_h2f_axi_master_awprot                    : std_logic_vector(2 downto 0);  -- hps_0:h2f_AWPROT -> mm_interconnect_0:hps_0_h2f_axi_master_awprot
-	signal hps_0_h2f_axi_master_wdata                     : std_logic_vector(63 downto 0); -- hps_0:h2f_WDATA -> mm_interconnect_0:hps_0_h2f_axi_master_wdata
-	signal hps_0_h2f_axi_master_arvalid                   : std_logic;                     -- hps_0:h2f_ARVALID -> mm_interconnect_0:hps_0_h2f_axi_master_arvalid
-	signal hps_0_h2f_axi_master_awcache                   : std_logic_vector(3 downto 0);  -- hps_0:h2f_AWCACHE -> mm_interconnect_0:hps_0_h2f_axi_master_awcache
-	signal hps_0_h2f_axi_master_arid                      : std_logic_vector(11 downto 0); -- hps_0:h2f_ARID -> mm_interconnect_0:hps_0_h2f_axi_master_arid
-	signal hps_0_h2f_axi_master_arlock                    : std_logic_vector(1 downto 0);  -- hps_0:h2f_ARLOCK -> mm_interconnect_0:hps_0_h2f_axi_master_arlock
-	signal hps_0_h2f_axi_master_awlock                    : std_logic_vector(1 downto 0);  -- hps_0:h2f_AWLOCK -> mm_interconnect_0:hps_0_h2f_axi_master_awlock
-	signal hps_0_h2f_axi_master_awaddr                    : std_logic_vector(29 downto 0); -- hps_0:h2f_AWADDR -> mm_interconnect_0:hps_0_h2f_axi_master_awaddr
-	signal hps_0_h2f_axi_master_bresp                     : std_logic_vector(1 downto 0);  -- mm_interconnect_0:hps_0_h2f_axi_master_bresp -> hps_0:h2f_BRESP
-	signal hps_0_h2f_axi_master_arready                   : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_arready -> hps_0:h2f_ARREADY
-	signal hps_0_h2f_axi_master_rdata                     : std_logic_vector(63 downto 0); -- mm_interconnect_0:hps_0_h2f_axi_master_rdata -> hps_0:h2f_RDATA
-	signal hps_0_h2f_axi_master_awready                   : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_awready -> hps_0:h2f_AWREADY
-	signal hps_0_h2f_axi_master_arburst                   : std_logic_vector(1 downto 0);  -- hps_0:h2f_ARBURST -> mm_interconnect_0:hps_0_h2f_axi_master_arburst
-	signal hps_0_h2f_axi_master_arsize                    : std_logic_vector(2 downto 0);  -- hps_0:h2f_ARSIZE -> mm_interconnect_0:hps_0_h2f_axi_master_arsize
-	signal hps_0_h2f_axi_master_bready                    : std_logic;                     -- hps_0:h2f_BREADY -> mm_interconnect_0:hps_0_h2f_axi_master_bready
-	signal hps_0_h2f_axi_master_rlast                     : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_rlast -> hps_0:h2f_RLAST
-	signal hps_0_h2f_axi_master_wlast                     : std_logic;                     -- hps_0:h2f_WLAST -> mm_interconnect_0:hps_0_h2f_axi_master_wlast
-	signal hps_0_h2f_axi_master_rresp                     : std_logic_vector(1 downto 0);  -- mm_interconnect_0:hps_0_h2f_axi_master_rresp -> hps_0:h2f_RRESP
-	signal hps_0_h2f_axi_master_awid                      : std_logic_vector(11 downto 0); -- hps_0:h2f_AWID -> mm_interconnect_0:hps_0_h2f_axi_master_awid
-	signal hps_0_h2f_axi_master_bid                       : std_logic_vector(11 downto 0); -- mm_interconnect_0:hps_0_h2f_axi_master_bid -> hps_0:h2f_BID
-	signal hps_0_h2f_axi_master_bvalid                    : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_bvalid -> hps_0:h2f_BVALID
-	signal hps_0_h2f_axi_master_awsize                    : std_logic_vector(2 downto 0);  -- hps_0:h2f_AWSIZE -> mm_interconnect_0:hps_0_h2f_axi_master_awsize
-	signal hps_0_h2f_axi_master_awvalid                   : std_logic;                     -- hps_0:h2f_AWVALID -> mm_interconnect_0:hps_0_h2f_axi_master_awvalid
-	signal hps_0_h2f_axi_master_rvalid                    : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_rvalid -> hps_0:h2f_RVALID
-	signal mm_interconnect_0_mm_bridge_0_s0_readdata      : std_logic_vector(63 downto 0); -- mm_bridge_0:s0_readdata -> mm_interconnect_0:mm_bridge_0_s0_readdata
-	signal mm_interconnect_0_mm_bridge_0_s0_waitrequest   : std_logic;                     -- mm_bridge_0:s0_waitrequest -> mm_interconnect_0:mm_bridge_0_s0_waitrequest
-	signal mm_interconnect_0_mm_bridge_0_s0_debugaccess   : std_logic;                     -- mm_interconnect_0:mm_bridge_0_s0_debugaccess -> mm_bridge_0:s0_debugaccess
-	signal mm_interconnect_0_mm_bridge_0_s0_address       : std_logic_vector(9 downto 0);  -- mm_interconnect_0:mm_bridge_0_s0_address -> mm_bridge_0:s0_address
-	signal mm_interconnect_0_mm_bridge_0_s0_read          : std_logic;                     -- mm_interconnect_0:mm_bridge_0_s0_read -> mm_bridge_0:s0_read
-	signal mm_interconnect_0_mm_bridge_0_s0_byteenable    : std_logic_vector(7 downto 0);  -- mm_interconnect_0:mm_bridge_0_s0_byteenable -> mm_bridge_0:s0_byteenable
-	signal mm_interconnect_0_mm_bridge_0_s0_readdatavalid : std_logic;                     -- mm_bridge_0:s0_readdatavalid -> mm_interconnect_0:mm_bridge_0_s0_readdatavalid
-	signal mm_interconnect_0_mm_bridge_0_s0_write         : std_logic;                     -- mm_interconnect_0:mm_bridge_0_s0_write -> mm_bridge_0:s0_write
-	signal mm_interconnect_0_mm_bridge_0_s0_writedata     : std_logic_vector(63 downto 0); -- mm_interconnect_0:mm_bridge_0_s0_writedata -> mm_bridge_0:s0_writedata
-	signal mm_interconnect_0_mm_bridge_0_s0_burstcount    : std_logic_vector(0 downto 0);  -- mm_interconnect_0:mm_bridge_0_s0_burstcount -> mm_bridge_0:s0_burstcount
-	signal rst_controller_reset_out_reset                 : std_logic;                     -- rst_controller:reset_out -> [mm_bridge_0:reset, mm_interconnect_0:mm_bridge_0_reset_reset_bridge_in_reset_reset]
-	signal rst_controller_001_reset_out_reset             : std_logic;                     -- rst_controller_001:reset_out -> mm_interconnect_0:hps_0_h2f_axi_master_agent_clk_reset_reset_bridge_in_reset_reset
-	signal hps_0_h2f_reset_reset_ports_inv                : std_logic;                     -- hps_0_h2f_reset_reset:inv -> [rst_controller:reset_in0, rst_controller_001:reset_in0]
+	signal hps_0_h2f_reset_reset                                               : std_logic;                     -- hps_0:h2f_rst_n -> hps_0_h2f_reset_reset:in
+	signal hps_0_h2f_axi_master_awburst                                        : std_logic_vector(1 downto 0);  -- hps_0:h2f_AWBURST -> mm_interconnect_0:hps_0_h2f_axi_master_awburst
+	signal hps_0_h2f_axi_master_arlen                                          : std_logic_vector(3 downto 0);  -- hps_0:h2f_ARLEN -> mm_interconnect_0:hps_0_h2f_axi_master_arlen
+	signal hps_0_h2f_axi_master_wstrb                                          : std_logic_vector(7 downto 0);  -- hps_0:h2f_WSTRB -> mm_interconnect_0:hps_0_h2f_axi_master_wstrb
+	signal hps_0_h2f_axi_master_wready                                         : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_wready -> hps_0:h2f_WREADY
+	signal hps_0_h2f_axi_master_rid                                            : std_logic_vector(11 downto 0); -- mm_interconnect_0:hps_0_h2f_axi_master_rid -> hps_0:h2f_RID
+	signal hps_0_h2f_axi_master_rready                                         : std_logic;                     -- hps_0:h2f_RREADY -> mm_interconnect_0:hps_0_h2f_axi_master_rready
+	signal hps_0_h2f_axi_master_awlen                                          : std_logic_vector(3 downto 0);  -- hps_0:h2f_AWLEN -> mm_interconnect_0:hps_0_h2f_axi_master_awlen
+	signal hps_0_h2f_axi_master_wid                                            : std_logic_vector(11 downto 0); -- hps_0:h2f_WID -> mm_interconnect_0:hps_0_h2f_axi_master_wid
+	signal hps_0_h2f_axi_master_arcache                                        : std_logic_vector(3 downto 0);  -- hps_0:h2f_ARCACHE -> mm_interconnect_0:hps_0_h2f_axi_master_arcache
+	signal hps_0_h2f_axi_master_wvalid                                         : std_logic;                     -- hps_0:h2f_WVALID -> mm_interconnect_0:hps_0_h2f_axi_master_wvalid
+	signal hps_0_h2f_axi_master_araddr                                         : std_logic_vector(29 downto 0); -- hps_0:h2f_ARADDR -> mm_interconnect_0:hps_0_h2f_axi_master_araddr
+	signal hps_0_h2f_axi_master_arprot                                         : std_logic_vector(2 downto 0);  -- hps_0:h2f_ARPROT -> mm_interconnect_0:hps_0_h2f_axi_master_arprot
+	signal hps_0_h2f_axi_master_awprot                                         : std_logic_vector(2 downto 0);  -- hps_0:h2f_AWPROT -> mm_interconnect_0:hps_0_h2f_axi_master_awprot
+	signal hps_0_h2f_axi_master_wdata                                          : std_logic_vector(63 downto 0); -- hps_0:h2f_WDATA -> mm_interconnect_0:hps_0_h2f_axi_master_wdata
+	signal hps_0_h2f_axi_master_arvalid                                        : std_logic;                     -- hps_0:h2f_ARVALID -> mm_interconnect_0:hps_0_h2f_axi_master_arvalid
+	signal hps_0_h2f_axi_master_awcache                                        : std_logic_vector(3 downto 0);  -- hps_0:h2f_AWCACHE -> mm_interconnect_0:hps_0_h2f_axi_master_awcache
+	signal hps_0_h2f_axi_master_arid                                           : std_logic_vector(11 downto 0); -- hps_0:h2f_ARID -> mm_interconnect_0:hps_0_h2f_axi_master_arid
+	signal hps_0_h2f_axi_master_arlock                                         : std_logic_vector(1 downto 0);  -- hps_0:h2f_ARLOCK -> mm_interconnect_0:hps_0_h2f_axi_master_arlock
+	signal hps_0_h2f_axi_master_awlock                                         : std_logic_vector(1 downto 0);  -- hps_0:h2f_AWLOCK -> mm_interconnect_0:hps_0_h2f_axi_master_awlock
+	signal hps_0_h2f_axi_master_awaddr                                         : std_logic_vector(29 downto 0); -- hps_0:h2f_AWADDR -> mm_interconnect_0:hps_0_h2f_axi_master_awaddr
+	signal hps_0_h2f_axi_master_bresp                                          : std_logic_vector(1 downto 0);  -- mm_interconnect_0:hps_0_h2f_axi_master_bresp -> hps_0:h2f_BRESP
+	signal hps_0_h2f_axi_master_arready                                        : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_arready -> hps_0:h2f_ARREADY
+	signal hps_0_h2f_axi_master_rdata                                          : std_logic_vector(63 downto 0); -- mm_interconnect_0:hps_0_h2f_axi_master_rdata -> hps_0:h2f_RDATA
+	signal hps_0_h2f_axi_master_awready                                        : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_awready -> hps_0:h2f_AWREADY
+	signal hps_0_h2f_axi_master_arburst                                        : std_logic_vector(1 downto 0);  -- hps_0:h2f_ARBURST -> mm_interconnect_0:hps_0_h2f_axi_master_arburst
+	signal hps_0_h2f_axi_master_arsize                                         : std_logic_vector(2 downto 0);  -- hps_0:h2f_ARSIZE -> mm_interconnect_0:hps_0_h2f_axi_master_arsize
+	signal hps_0_h2f_axi_master_bready                                         : std_logic;                     -- hps_0:h2f_BREADY -> mm_interconnect_0:hps_0_h2f_axi_master_bready
+	signal hps_0_h2f_axi_master_rlast                                          : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_rlast -> hps_0:h2f_RLAST
+	signal hps_0_h2f_axi_master_wlast                                          : std_logic;                     -- hps_0:h2f_WLAST -> mm_interconnect_0:hps_0_h2f_axi_master_wlast
+	signal hps_0_h2f_axi_master_rresp                                          : std_logic_vector(1 downto 0);  -- mm_interconnect_0:hps_0_h2f_axi_master_rresp -> hps_0:h2f_RRESP
+	signal hps_0_h2f_axi_master_awid                                           : std_logic_vector(11 downto 0); -- hps_0:h2f_AWID -> mm_interconnect_0:hps_0_h2f_axi_master_awid
+	signal hps_0_h2f_axi_master_bid                                            : std_logic_vector(11 downto 0); -- mm_interconnect_0:hps_0_h2f_axi_master_bid -> hps_0:h2f_BID
+	signal hps_0_h2f_axi_master_bvalid                                         : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_bvalid -> hps_0:h2f_BVALID
+	signal hps_0_h2f_axi_master_awsize                                         : std_logic_vector(2 downto 0);  -- hps_0:h2f_AWSIZE -> mm_interconnect_0:hps_0_h2f_axi_master_awsize
+	signal hps_0_h2f_axi_master_awvalid                                        : std_logic;                     -- hps_0:h2f_AWVALID -> mm_interconnect_0:hps_0_h2f_axi_master_awvalid
+	signal hps_0_h2f_axi_master_rvalid                                         : std_logic;                     -- mm_interconnect_0:hps_0_h2f_axi_master_rvalid -> hps_0:h2f_RVALID
+	signal mm_interconnect_0_mm_bridge_0_s0_readdata                           : std_logic_vector(63 downto 0); -- mm_bridge_0:s0_readdata -> mm_interconnect_0:mm_bridge_0_s0_readdata
+	signal mm_interconnect_0_mm_bridge_0_s0_waitrequest                        : std_logic;                     -- mm_bridge_0:s0_waitrequest -> mm_interconnect_0:mm_bridge_0_s0_waitrequest
+	signal mm_interconnect_0_mm_bridge_0_s0_debugaccess                        : std_logic;                     -- mm_interconnect_0:mm_bridge_0_s0_debugaccess -> mm_bridge_0:s0_debugaccess
+	signal mm_interconnect_0_mm_bridge_0_s0_address                            : std_logic_vector(9 downto 0);  -- mm_interconnect_0:mm_bridge_0_s0_address -> mm_bridge_0:s0_address
+	signal mm_interconnect_0_mm_bridge_0_s0_read                               : std_logic;                     -- mm_interconnect_0:mm_bridge_0_s0_read -> mm_bridge_0:s0_read
+	signal mm_interconnect_0_mm_bridge_0_s0_byteenable                         : std_logic_vector(7 downto 0);  -- mm_interconnect_0:mm_bridge_0_s0_byteenable -> mm_bridge_0:s0_byteenable
+	signal mm_interconnect_0_mm_bridge_0_s0_readdatavalid                      : std_logic;                     -- mm_bridge_0:s0_readdatavalid -> mm_interconnect_0:mm_bridge_0_s0_readdatavalid
+	signal mm_interconnect_0_mm_bridge_0_s0_write                              : std_logic;                     -- mm_interconnect_0:mm_bridge_0_s0_write -> mm_bridge_0:s0_write
+	signal mm_interconnect_0_mm_bridge_0_s0_writedata                          : std_logic_vector(63 downto 0); -- mm_interconnect_0:mm_bridge_0_s0_writedata -> mm_bridge_0:s0_writedata
+	signal mm_interconnect_0_mm_bridge_0_s0_burstcount                         : std_logic_vector(3 downto 0);  -- mm_interconnect_0:mm_bridge_0_s0_burstcount -> mm_bridge_0:s0_burstcount
+	signal mm_bridge_0_m0_waitrequest                                          : std_logic;                     -- mm_interconnect_1:mm_bridge_0_m0_waitrequest -> mm_bridge_0:m0_waitrequest
+	signal mm_bridge_0_m0_readdata                                             : std_logic_vector(63 downto 0); -- mm_interconnect_1:mm_bridge_0_m0_readdata -> mm_bridge_0:m0_readdata
+	signal mm_bridge_0_m0_debugaccess                                          : std_logic;                     -- mm_bridge_0:m0_debugaccess -> mm_interconnect_1:mm_bridge_0_m0_debugaccess
+	signal mm_bridge_0_m0_address                                              : std_logic_vector(9 downto 0);  -- mm_bridge_0:m0_address -> mm_interconnect_1:mm_bridge_0_m0_address
+	signal mm_bridge_0_m0_read                                                 : std_logic;                     -- mm_bridge_0:m0_read -> mm_interconnect_1:mm_bridge_0_m0_read
+	signal mm_bridge_0_m0_byteenable                                           : std_logic_vector(7 downto 0);  -- mm_bridge_0:m0_byteenable -> mm_interconnect_1:mm_bridge_0_m0_byteenable
+	signal mm_bridge_0_m0_readdatavalid                                        : std_logic;                     -- mm_interconnect_1:mm_bridge_0_m0_readdatavalid -> mm_bridge_0:m0_readdatavalid
+	signal mm_bridge_0_m0_writedata                                            : std_logic_vector(63 downto 0); -- mm_bridge_0:m0_writedata -> mm_interconnect_1:mm_bridge_0_m0_writedata
+	signal mm_bridge_0_m0_write                                                : std_logic;                     -- mm_bridge_0:m0_write -> mm_interconnect_1:mm_bridge_0_m0_write
+	signal mm_bridge_0_m0_burstcount                                           : std_logic_vector(3 downto 0);  -- mm_bridge_0:m0_burstcount -> mm_interconnect_1:mm_bridge_0_m0_burstcount
+	signal mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_readdata  : std_logic_vector(7 downto 0);  -- mand_cluster_avalon_mm_0:avs_readdata -> mm_interconnect_1:mand_cluster_avalon_mm_0_avalon_slave_0_readdata
+	signal mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_address   : std_logic_vector(9 downto 0);  -- mm_interconnect_1:mand_cluster_avalon_mm_0_avalon_slave_0_address -> mand_cluster_avalon_mm_0:avs_address
+	signal mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_read      : std_logic;                     -- mm_interconnect_1:mand_cluster_avalon_mm_0_avalon_slave_0_read -> mand_cluster_avalon_mm_0:avs_read
+	signal mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_write     : std_logic;                     -- mm_interconnect_1:mand_cluster_avalon_mm_0_avalon_slave_0_write -> mand_cluster_avalon_mm_0:avs_write
+	signal mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_writedata : std_logic_vector(7 downto 0);  -- mm_interconnect_1:mand_cluster_avalon_mm_0_avalon_slave_0_writedata -> mand_cluster_avalon_mm_0:avs_writedata
+	signal rst_controller_reset_out_reset                                      : std_logic;                     -- rst_controller:reset_out -> [mand_cluster_avalon_mm_0:reset, mm_bridge_0:reset, mm_interconnect_0:mm_bridge_0_reset_reset_bridge_in_reset_reset, mm_interconnect_1:mm_bridge_0_reset_reset_bridge_in_reset_reset]
+	signal rst_controller_001_reset_out_reset                                  : std_logic;                     -- rst_controller_001:reset_out -> mm_interconnect_0:hps_0_h2f_axi_master_agent_clk_reset_reset_bridge_in_reset_reset
+	signal hps_0_h2f_reset_reset_ports_inv                                     : std_logic;                     -- hps_0_h2f_reset_reset:inv -> [rst_controller:reset_in0, rst_controller_001:reset_in0]
 
 begin
 
@@ -364,12 +421,31 @@ begin
 			h2f_RREADY  => hps_0_h2f_axi_master_rready   --               .rready
 		);
 
+	mand_cluster_avalon_mm_0 : component mand_cluster_avalon_mm
+		generic map (
+			CORES_COUNT        => 2,
+			FIXED_SIZE         => 32,
+			FIXED_INTEGER_SIZE => 5,
+			ITTERATIONS_SIZE   => 32,
+			AVALON_DATA_WIDTH  => 8,
+			NORMAL_REG_SIZE    => 32
+		)
+		port map (
+			clk           => clk_clk,                                                             --          clock.clk
+			avs_address   => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_address,   -- avalon_slave_0.address
+			avs_read      => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_read,      --               .read
+			avs_write     => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_write,     --               .write
+			avs_writedata => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_writedata, --               .writedata
+			avs_readdata  => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_readdata,  --               .readdata
+			reset         => rst_controller_reset_out_reset                                       --          reset.reset
+		);
+
 	mm_bridge_0 : component altera_avalon_mm_bridge
 		generic map (
 			DATA_WIDTH        => 64,
 			SYMBOL_WIDTH      => 8,
 			HDL_ADDR_WIDTH    => 10,
-			BURSTCOUNT_WIDTH  => 1,
+			BURSTCOUNT_WIDTH  => 4,
 			PIPELINE_COMMAND  => 1,
 			PIPELINE_RESPONSE => 1
 		)
@@ -386,16 +462,16 @@ begin
 			s0_read          => mm_interconnect_0_mm_bridge_0_s0_read,          --      .read
 			s0_byteenable    => mm_interconnect_0_mm_bridge_0_s0_byteenable,    --      .byteenable
 			s0_debugaccess   => mm_interconnect_0_mm_bridge_0_s0_debugaccess,   --      .debugaccess
-			m0_waitrequest   => open,                                           --    m0.waitrequest
-			m0_readdata      => open,                                           --      .readdata
-			m0_readdatavalid => open,                                           --      .readdatavalid
-			m0_burstcount    => open,                                           --      .burstcount
-			m0_writedata     => open,                                           --      .writedata
-			m0_address       => open,                                           --      .address
-			m0_write         => open,                                           --      .write
-			m0_read          => open,                                           --      .read
-			m0_byteenable    => open,                                           --      .byteenable
-			m0_debugaccess   => open,                                           --      .debugaccess
+			m0_waitrequest   => mm_bridge_0_m0_waitrequest,                     --    m0.waitrequest
+			m0_readdata      => mm_bridge_0_m0_readdata,                        --      .readdata
+			m0_readdatavalid => mm_bridge_0_m0_readdatavalid,                   --      .readdatavalid
+			m0_burstcount    => mm_bridge_0_m0_burstcount,                      --      .burstcount
+			m0_writedata     => mm_bridge_0_m0_writedata,                       --      .writedata
+			m0_address       => mm_bridge_0_m0_address,                         --      .address
+			m0_write         => mm_bridge_0_m0_write,                           --      .write
+			m0_read          => mm_bridge_0_m0_read,                            --      .read
+			m0_byteenable    => mm_bridge_0_m0_byteenable,                      --      .byteenable
+			m0_debugaccess   => mm_bridge_0_m0_debugaccess,                     --      .debugaccess
 			s0_response      => open,                                           -- (terminated)
 			m0_response      => "00"                                            -- (terminated)
 		);
@@ -451,6 +527,27 @@ begin
 			mm_bridge_0_s0_readdatavalid                                     => mm_interconnect_0_mm_bridge_0_s0_readdatavalid, --                                                           .readdatavalid
 			mm_bridge_0_s0_waitrequest                                       => mm_interconnect_0_mm_bridge_0_s0_waitrequest,   --                                                           .waitrequest
 			mm_bridge_0_s0_debugaccess                                       => mm_interconnect_0_mm_bridge_0_s0_debugaccess    --                                                           .debugaccess
+		);
+
+	mm_interconnect_1 : component soc_system_mm_interconnect_1
+		port map (
+			clk_0_clk_clk                                     => clk_clk,                                                             --                               clk_0_clk.clk
+			mm_bridge_0_reset_reset_bridge_in_reset_reset     => rst_controller_reset_out_reset,                                      -- mm_bridge_0_reset_reset_bridge_in_reset.reset
+			mm_bridge_0_m0_address                            => mm_bridge_0_m0_address,                                              --                          mm_bridge_0_m0.address
+			mm_bridge_0_m0_waitrequest                        => mm_bridge_0_m0_waitrequest,                                          --                                        .waitrequest
+			mm_bridge_0_m0_burstcount                         => mm_bridge_0_m0_burstcount,                                           --                                        .burstcount
+			mm_bridge_0_m0_byteenable                         => mm_bridge_0_m0_byteenable,                                           --                                        .byteenable
+			mm_bridge_0_m0_read                               => mm_bridge_0_m0_read,                                                 --                                        .read
+			mm_bridge_0_m0_readdata                           => mm_bridge_0_m0_readdata,                                             --                                        .readdata
+			mm_bridge_0_m0_readdatavalid                      => mm_bridge_0_m0_readdatavalid,                                        --                                        .readdatavalid
+			mm_bridge_0_m0_write                              => mm_bridge_0_m0_write,                                                --                                        .write
+			mm_bridge_0_m0_writedata                          => mm_bridge_0_m0_writedata,                                            --                                        .writedata
+			mm_bridge_0_m0_debugaccess                        => mm_bridge_0_m0_debugaccess,                                          --                                        .debugaccess
+			mand_cluster_avalon_mm_0_avalon_slave_0_address   => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_address,   -- mand_cluster_avalon_mm_0_avalon_slave_0.address
+			mand_cluster_avalon_mm_0_avalon_slave_0_write     => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_write,     --                                        .write
+			mand_cluster_avalon_mm_0_avalon_slave_0_read      => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_read,      --                                        .read
+			mand_cluster_avalon_mm_0_avalon_slave_0_readdata  => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_readdata,  --                                        .readdata
+			mand_cluster_avalon_mm_0_avalon_slave_0_writedata => mm_interconnect_1_mand_cluster_avalon_mm_0_avalon_slave_0_writedata  --                                        .writedata
 		);
 
 	rst_controller : component altera_reset_controller

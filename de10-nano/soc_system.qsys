@@ -30,6 +30,14 @@
          type = "int";
       }
    }
+   element mand_cluster_avalon_mm_0
+   {
+      datum _sortIndex
+      {
+         value = "3";
+         type = "int";
+      }
+   }
    element mm_bridge_0
    {
       datum _sortIndex
@@ -44,6 +52,14 @@
       {
          value = "1";
          type = "boolean";
+      }
+   }
+   element soc_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
       }
    }
    element subsystemA_0
@@ -614,6 +630,18 @@
   <parameter name="use_default_mpu_clk" value="true" />
  </module>
  <module
+   name="mand_cluster_avalon_mm_0"
+   kind="mand_cluster_avalon_mm"
+   version="1.0"
+   enabled="1">
+  <parameter name="AVALON_DATA_WIDTH" value="8" />
+  <parameter name="CORES_COUNT" value="2" />
+  <parameter name="FIXED_INTEGER_SIZE" value="5" />
+  <parameter name="FIXED_SIZE" value="32" />
+  <parameter name="ITTERATIONS_SIZE" value="32" />
+  <parameter name="NORMAL_REG_SIZE" value="32" />
+ </module>
+ <module
    name="mm_bridge_0"
    kind="altera_avalon_mm_bridge"
    version="23.1"
@@ -640,7 +668,21 @@
   <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
+ <connection
+   kind="avalon"
+   version="23.1"
+   start="mm_bridge_0.m0"
+   end="mand_cluster_avalon_mm_0.avalon_slave_0">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
  <connection kind="clock" version="23.1" start="clk_0.clk" end="mm_bridge_0.clk" />
+ <connection
+   kind="clock"
+   version="23.1"
+   start="clk_0.clk"
+   end="mand_cluster_avalon_mm_0.clock" />
  <connection
    kind="clock"
    version="23.1"
@@ -651,6 +693,11 @@
    version="23.1"
    start="clk_0.clk_reset"
    end="mm_bridge_0.reset" />
+ <connection
+   kind="reset"
+   version="23.1"
+   start="clk_0.clk_reset"
+   end="mand_cluster_avalon_mm_0.reset" />
  <connection
    kind="reset"
    version="23.1"

@@ -51,7 +51,7 @@ module soc_system_mm_interconnect_0 (
 		output wire        mm_bridge_0_s0_read,                                              //                                                           .read
 		input  wire [63:0] mm_bridge_0_s0_readdata,                                          //                                                           .readdata
 		output wire [63:0] mm_bridge_0_s0_writedata,                                         //                                                           .writedata
-		output wire [0:0]  mm_bridge_0_s0_burstcount,                                        //                                                           .burstcount
+		output wire [3:0]  mm_bridge_0_s0_burstcount,                                        //                                                           .burstcount
 		output wire [7:0]  mm_bridge_0_s0_byteenable,                                        //                                                           .byteenable
 		input  wire        mm_bridge_0_s0_readdatavalid,                                     //                                                           .readdatavalid
 		input  wire        mm_bridge_0_s0_waitrequest,                                       //                                                           .waitrequest
@@ -80,7 +80,7 @@ module soc_system_mm_interconnect_0 (
 	wire          mm_bridge_0_s0_agent_m0_lock;                       // mm_bridge_0_s0_agent:m0_lock -> mm_bridge_0_s0_translator:uav_lock
 	wire   [63:0] mm_bridge_0_s0_agent_m0_writedata;                  // mm_bridge_0_s0_agent:m0_writedata -> mm_bridge_0_s0_translator:uav_writedata
 	wire          mm_bridge_0_s0_agent_m0_write;                      // mm_bridge_0_s0_agent:m0_write -> mm_bridge_0_s0_translator:uav_write
-	wire    [3:0] mm_bridge_0_s0_agent_m0_burstcount;                 // mm_bridge_0_s0_agent:m0_burstcount -> mm_bridge_0_s0_translator:uav_burstcount
+	wire    [6:0] mm_bridge_0_s0_agent_m0_burstcount;                 // mm_bridge_0_s0_agent:m0_burstcount -> mm_bridge_0_s0_translator:uav_burstcount
 	wire          mm_bridge_0_s0_agent_rf_source_valid;               // mm_bridge_0_s0_agent:rf_source_valid -> mm_bridge_0_s0_agent_rsp_fifo:in_valid
 	wire  [159:0] mm_bridge_0_s0_agent_rf_source_data;                // mm_bridge_0_s0_agent:rf_source_data -> mm_bridge_0_s0_agent_rsp_fifo:in_data
 	wire          mm_bridge_0_s0_agent_rf_source_ready;               // mm_bridge_0_s0_agent_rsp_fifo:in_ready -> mm_bridge_0_s0_agent:rf_source_ready
@@ -175,11 +175,11 @@ module soc_system_mm_interconnect_0 (
 		.AV_ADDRESS_W                   (10),
 		.AV_DATA_W                      (64),
 		.UAV_DATA_W                     (64),
-		.AV_BURSTCOUNT_W                (1),
+		.AV_BURSTCOUNT_W                (4),
 		.AV_BYTEENABLE_W                (8),
 		.UAV_BYTEENABLE_W               (8),
 		.UAV_ADDRESS_W                  (30),
-		.UAV_BURSTCOUNT_W               (4),
+		.UAV_BURSTCOUNT_W               (7),
 		.AV_READLATENCY                 (0),
 		.USE_READDATAVALID              (1),
 		.USE_WAITREQUEST                (1),
@@ -395,8 +395,8 @@ module soc_system_mm_interconnect_0 (
 		.PKT_SYMBOL_W              (8),
 		.ST_CHANNEL_W              (2),
 		.ST_DATA_W                 (159),
-		.AVS_BURSTCOUNT_W          (4),
-		.SUPPRESS_0_BYTEEN_CMD     (1),
+		.AVS_BURSTCOUNT_W          (7),
+		.SUPPRESS_0_BYTEEN_CMD     (0),
 		.PREVENT_FIFO_OVERFLOW     (1),
 		.USE_READRESPONSE          (0),
 		.USE_WRITERESPONSE         (0),
@@ -491,7 +491,7 @@ module soc_system_mm_interconnect_0 (
 	altera_avalon_sc_fifo #(
 		.SYMBOLS_PER_BEAT    (1),
 		.BITS_PER_SYMBOL     (66),
-		.FIFO_DEPTH          (8),
+		.FIFO_DEPTH          (64),
 		.CHANNEL_WIDTH       (0),
 		.ERROR_WIDTH         (0),
 		.USE_PACKETS         (0),
@@ -600,7 +600,7 @@ module soc_system_mm_interconnect_0 (
 		.OUT_COMPLETE_WRAP         (0),
 		.ST_DATA_W                 (159),
 		.ST_CHANNEL_W              (2),
-		.OUT_BYTE_CNT_H            (111),
+		.OUT_BYTE_CNT_H            (114),
 		.OUT_BURSTWRAP_H           (123),
 		.COMPRESSED_READ_SUPPORT   (1),
 		.BYTEENABLE_SYNTHESIS      (1),

@@ -475,7 +475,6 @@ set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_RO
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name VHDL_FILE ../ip/mand_avalon_cluster_avalon_mm/mand_cluster_avalon_mm.vhd
 set_global_assignment -name VHDL_FILE ../libs/mand/pkg/functions.vhd
 set_global_assignment -name VHDL_FILE ../libs/mand/components/multiply_block/src/multiply_block.vhd
@@ -486,3 +485,4 @@ set_global_assignment -name VERILOG_FILE ip/edge_detect/altera_edge_detector.v
 set_global_assignment -name VERILOG_FILE ip/debounce/debounce.v
 set_global_assignment -name QIP_FILE ip/altsource_probe/hps_reset.qip
 set_global_assignment -name QIP_FILE soc_system/synthesis/soc_system.qip
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
