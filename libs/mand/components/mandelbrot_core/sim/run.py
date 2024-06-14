@@ -99,6 +99,9 @@ def generate_test_benches(
 
             python_mand_image[row, col] = itterations
 
+    plt.imshow(python_mand_image)
+    plt.show()
+
     return vuint_configs, python_mand_image
 
 
@@ -159,7 +162,7 @@ def test_result_parser(original_image):
 
 
 test_configs, python_mand_image = generate_test_benches(
-    width=10, fixed_integer_size=4, fixed_size=64, max_iterations=100
+    width=20, fixed_integer_size=4, fixed_size=124, max_iterations=24
 )
 for config in test_configs:
     prj.library("mand").test_bench("tb").test("test_point_calculation").add_config(

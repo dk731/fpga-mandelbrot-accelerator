@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity mand_cluster_avalon_mm_interface is
+entity mand_cluster_avalon_mm is
     generic (
         CORES_COUNT : natural := 16; -- Number of cores to use
         FIXED_INTEGER_SIZE : natural := 1; -- Fixed floating point integer bits for the i_x and i_y inputs
@@ -10,7 +10,6 @@ entity mand_cluster_avalon_mm_interface is
 
         ITERATIONS_SIZE : natural := 2; -- Size of the output iterations value (unsigned long by default)
         NORMAL_REG_SIZE : natural := 32; -- Size of the normal registers
-        CORES_STATUS_SIZE : natural := 512 -- Size of registers that hold the status of all cores (should be at least CORES_COUNT bits long)
     );
     port (
         clk : in std_logic;
@@ -20,7 +19,8 @@ entity mand_cluster_avalon_mm_interface is
     );
 end entity;
 
-architecture RTL of mand_cluster_avalon_mm_interface is
+architecture RTL of mand_cluster_avalon_mm is
+    constant CORE_MM_SIZE : natural :=
 begin
 
 end architecture;
