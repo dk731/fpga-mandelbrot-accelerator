@@ -17,7 +17,7 @@ entity mand_cluster_avalon_mm is
         ITTERATIONS_SIZE : natural := 32; -- Size of the output iterations value (unsigned long by default)
 
         -- Avalon-MM configuration
-        constant AVALON_DATA_WIDTH : natural := 64; -- Avalon-MM data width
+        constant AVALON_DATA_WIDTH : natural := 8; -- For know I will use 8-bit data width
 
         constant NORMAL_REG_SIZE : natural := 32 -- Dont change this, or driver will have to be compiled
     );
@@ -31,8 +31,8 @@ entity mand_cluster_avalon_mm is
         avs_read : in std_logic;
         avs_write : in std_logic;
         avs_writedata : in std_logic_vector(AVALON_DATA_WIDTH - 1 downto 0);
-        avs_readdata : out std_logic_vector(AVALON_DATA_WIDTH - 1 downto 0);
-        avs_byteenable : in std_logic_vector((AVALON_DATA_WIDTH / 8) - 1 downto 0)
+        avs_readdata : out std_logic_vector(AVALON_DATA_WIDTH - 1 downto 0)
+        -- avs_byteenable : in std_logic_vector((AVALON_DATA_WIDTH / 8) - 1 downto 0)
     );
 end entity;
 
@@ -96,6 +96,27 @@ architecture RTL of mand_cluster_avalon_mm is
 
     constant CORES_STATUS_REG_SIZE : natural := div_ceil(CORES_COUNT, 8) * 8;
 
+    -- All registers addresses in bits
+    constant CORES_COUNT_REG_ADDRESS : natural := 0;
+    constant FIXED_SIZE_REG_ADDRESS : natural := CORES_COUNT_REG_ADDRESS + NORMAL_REG_SIZE;
+    constant FIXED_INTEGER_SIZE_REG_ADDRESS : natural := FIXED_SIZE_REG_ADDRESS + NORMAL_REG_SIZE;
+    constant ITTERATIONS_SIZE_REG_ADDRESS : natural := FIXED_INTEGER_SIZE_REG_ADDRESS + NORMAL_REG_SIZE;
+    constant CORES_STATUS_REG_SIZE_REG_ADDRESS : natural := ITTERATIONS_SIZE_REG_ADDRESS + NORMAL_REG_SIZE;
+
+    constant COMMAND_REG_ADDRESS : natural := CORES_STATUS_REG_SIZE_REG_ADDRESS + NORMAL_REG_SIZE;
+    constant COMMAND_STATUS_REG_ADDRESS : natural := COMMAND_REG_ADDRESS + NORMAL_REG_SIZE;
+    constant CORE_ADDRESS_REG_ADDRESS : natural := COMMAND_STATUS_REG_ADDRESS + NORMAL_REG_SIZE;
+    constant CORES_BUSY_FLAG_REG_ADDRESS : natural := CORE_ADDRESS_REG_ADDRESS + NORMAL_REG_SIZE;
+    constant CORES_VALID_FLAG_REG_ADDRESS : natural := CORES_BUSY_FLAG_REG_ADDRESS + CORES_STATUS_REG_SIZE;
+
+    constant CORE_X_REG_ADDRESS : natural := CORES_VALID_FLAG_REG_ADDRESS + CORES_STATUS_REG_SIZE;
+    constant CORE_Y_REG_ADDRESS : natural := CORE_X_REG_ADDRESS + FIXED_SIZE;
+    constant CORE_ITTERATIONS_MAX_REG_ADDRESS : natural := CORE_Y_REG_ADDRESS + FIXED_SIZE;
+
+    constant CORE_RESULT_REG_ADDRESS : natural := CORE_ITTERATIONS_MAX_REG_ADDRESS + ITTERATIONS_SIZE;
+    constant CORE_BUSY_REG_ADDRESS : natural := CORE_RESULT_REG_ADDRESS + ITTERATIONS_SIZE;
+    constant CORE_VALID_REG_ADDRESS : natural := CORE_BUSY_REG_ADDRESS + NORMAL_REG_SIZE;
+
     -- Control registers
     signal cluster_command_reg, cluster_command_next : unsigned(NORMAL_REG_SIZE - 1 downto 0) := (others => '0');
     signal cluster_command_status_reg, cluster_command_status_next : unsigned(NORMAL_REG_SIZE - 1 downto 0) := (others => '0');
@@ -118,10 +139,63 @@ architecture RTL of mand_cluster_avalon_mm is
     signal cores_busy_flags : std_logic_vector(CORES_COUNT - 1 downto 0) := (others => '0');
     signal cores_valid_flags : std_logic_vector(CORES_COUNT - 1 downto 0) := (others => '0');
 
+    signal avalon_read_mm : std_logic_vector(1024 - 1 downto 0) := (others => '0');
+    signal avalon_write_mm : std_logic_vector(1024 - 1 downto 0) := (others => '0');
 begin
+
+    -- Registers
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            if sync_reset = '1' then
+                -- Reset registers
+                cluster_command_reg <= (others => '0');
+                cluster_command_status_reg <= (others => '0');
+                core_address_reg <= (others => '0');
+
+                core_x_reg <= (others => '0');
+                core_y_reg <= (others => '0');
+                core_itterations_max_reg <= (others => '0');
+
+                core_result_reg <= (others => '0');
+                core_busy_reg <= '0';
+                core_valid_reg <= '0';
+
+                cores_i_start_reg <= (others => '0');
+            else
+                -- Control registers
+                cluster_command_reg <= cluster_command_next;
+                cluster_command_status_reg <= cluster_command_status_next;
+                -- Cores output registers
+                core_result_reg <= core_result_next;
+                core_busy_reg <= core_busy_next;
+                core_valid_reg <= core_valid_next;
+
+                -- Additional registers
+                cores_i_start_reg <= cores_i_start_next;
+
+                if avs_write = '1' then
+                    -- cluster_command_next <= unsigned(avalon_write_mm(COMMAND_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto COMMAND_REG_ADDRESS));
+                    core_address_reg <= unsigned(avalon_write_mm(CORE_ADDRESS_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto CORE_ADDRESS_REG_ADDRESS));
+                    core_x_reg <= signed(avalon_write_mm(CORE_X_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_X_REG_ADDRESS));
+                    core_y_reg <= signed(avalon_write_mm(CORE_Y_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_Y_REG_ADDRESS));
+                    core_itterations_max_reg <= unsigned(avalon_write_mm(CORE_ITTERATIONS_MAX_REG_ADDRESS + ITTERATIONS_SIZE - 1 downto CORE_ITTERATIONS_MAX_REG_ADDRESS));
+                else
+                    -- Cores input registers
+                    core_address_reg <= core_address_next;
+                    core_x_reg <= core_x_next;
+                    core_y_reg <= core_y_next;
+                    core_itterations_max_reg <= core_itterations_max_next;
+                end if;
+
+            end if;
+        end if;
+    end process;
 
     -- Avalon-MM slave interface
     process (clk)
+        variable avs_bit_address : integer := to_integer(unsigned(avs_address)) * 8;
+
     begin
         if rising_edge(clk) then
             if sync_reset = '1' then
@@ -131,15 +205,12 @@ begin
             elsif avs_write = '1' then
                 -- Avalon-MM write operation
 
-                -- TODO:
-                -- Implement write operation
+                avalon_write_mm(avs_bit_address + 8 - 1 downto avs_bit_address) <= avs_readdata;
 
             elsif avs_read = '1' then
                 -- Avalon-MM read operation
 
-                -- TODO:
-                -- Implement read operation
-                avs_readdata <= (others => '0');
+                avs_readdata <= avalon_read_mm(avs_bit_address + 8 - 1 downto avs_bit_address);
             else
                 -- By default, return 0
                 avs_readdata <= (others => '0');
@@ -172,5 +243,26 @@ begin
                 o_valid => cores_valid_flags(i)
             );
     end generate;
+
+    -- Avalon-MM read interface
+    avalon_read_mm(CORES_COUNT_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto CORES_COUNT_REG_ADDRESS) <= std_logic_vector(to_unsigned(CORES_COUNT, NORMAL_REG_SIZE));
+    avalon_read_mm(FIXED_SIZE_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto FIXED_SIZE_REG_ADDRESS) <= std_logic_vector(to_unsigned(FIXED_SIZE, NORMAL_REG_SIZE));
+    avalon_read_mm(FIXED_INTEGER_SIZE_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto FIXED_INTEGER_SIZE_REG_ADDRESS) <= std_logic_vector(to_unsigned(FIXED_INTEGER_SIZE, NORMAL_REG_SIZE));
+    avalon_read_mm(ITTERATIONS_SIZE_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto ITTERATIONS_SIZE_REG_ADDRESS) <= std_logic_vector(to_unsigned(ITTERATIONS_SIZE, NORMAL_REG_SIZE));
+    avalon_read_mm(CORES_STATUS_REG_SIZE_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto CORES_STATUS_REG_SIZE_REG_ADDRESS) <= std_logic_vector(to_unsigned(CORES_STATUS_REG_SIZE, NORMAL_REG_SIZE));
+
+    avalon_read_mm(COMMAND_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto COMMAND_REG_ADDRESS) <= std_logic_vector(cluster_command_reg);
+    avalon_read_mm(COMMAND_STATUS_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto COMMAND_STATUS_REG_ADDRESS) <= std_logic_vector(cluster_command_status_reg);
+    avalon_read_mm(CORE_ADDRESS_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto CORE_ADDRESS_REG_ADDRESS) <= std_logic_vector(core_address_reg);
+    avalon_read_mm(CORES_BUSY_FLAG_REG_ADDRESS + CORES_COUNT - 1 downto CORES_BUSY_FLAG_REG_ADDRESS) <= cores_busy_flags;
+    avalon_read_mm(CORES_VALID_FLAG_REG_ADDRESS + CORES_COUNT - 1 downto CORES_VALID_FLAG_REG_ADDRESS) <= cores_valid_flags;
+
+    avalon_read_mm(CORE_X_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_X_REG_ADDRESS) <= std_logic_vector(core_x_reg);
+    avalon_read_mm(CORE_Y_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_Y_REG_ADDRESS) <= std_logic_vector(core_y_reg);
+    avalon_read_mm(CORE_ITTERATIONS_MAX_REG_ADDRESS + ITTERATIONS_SIZE - 1 downto CORE_ITTERATIONS_MAX_REG_ADDRESS) <= std_logic_vector(core_itterations_max_reg);
+
+    avalon_read_mm(CORE_RESULT_REG_ADDRESS + ITTERATIONS_SIZE - 1 downto CORE_RESULT_REG_ADDRESS) <= std_logic_vector(core_result_reg);
+    avalon_read_mm(CORE_BUSY_REG_ADDRESS) <= core_busy_reg;
+    avalon_read_mm(CORE_VALID_REG_ADDRESS) <= core_valid_reg;
 
 end architecture;
