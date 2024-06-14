@@ -9,7 +9,7 @@ use mand.functions.all;
 entity mand_cluster_avalon_mm is
     generic (
         -- Cluster configuration
-        CORES_COUNT : natural := 4; -- Number of cores to use
+        CORES_COUNT : natural := 2; -- Number of cores to use
 
         -- Each Mandelbrot core configuration
         FIXED_SIZE : natural := 32; -- Size of the input i_x and i_y values
@@ -37,17 +37,19 @@ entity mand_cluster_avalon_mm is
 end entity;
 
 -- Avalon-MM Control Commands:
--- 0x00 - No operation
+-- 0x00 - No operation (NOP)
 -- 0x01 - Load outputs from <core_address> core to output registers: <active_core_o_result>, <core_o_busy>, <core_o_valid>
 -- 0x02 - Trigger start calculation on <core_address> core with <core_i_x>, <core_i_y>, <core_i_itterations_max> inputs
 -- 0x03 - Trigger reset on <core_address> core
 
 -- Command Statuses:
 -- 0x00 - Success
--- 0x01 - Busy
+-- 0x01 - Cluster is busy
 -- 0x02 - Invalid command
 -- 0x03 - Invalid core address
 -- 0x04 - Attempt to start calculation on busy core (request ignored)
+-- 0x05 - After cluster reset
+-- 0xff - Unknown error
 
 -- HPC Memory-Mapped Mandelbrot Cluster
 --  - Meta data registers: (
@@ -68,7 +70,7 @@ end entity;
 --      cores_valid_flag                - RO, size: CORES_STATUS_REG_SIZE
 --    )
 --   Command register will store last executed command. Command will be executed on <command> register write.
---   Command status will store status of last executed command.
+--   Command status will store status of last executed non-NOP command.
 --
 -- 
 --  - Cores input registers: (
@@ -96,7 +98,7 @@ architecture RTL of mand_cluster_avalon_mm is
 
     constant CORES_STATUS_REG_SIZE : natural := div_ceil(CORES_COUNT, 8) * 8;
 
-    -- All registers addresses in bits
+    -- Register addresses
     constant CORES_COUNT_REG_ADDRESS : natural := 0;
     constant FIXED_SIZE_REG_ADDRESS : natural := CORES_COUNT_REG_ADDRESS + NORMAL_REG_SIZE;
     constant FIXED_INTEGER_SIZE_REG_ADDRESS : natural := FIXED_SIZE_REG_ADDRESS + NORMAL_REG_SIZE;
@@ -117,6 +119,22 @@ architecture RTL of mand_cluster_avalon_mm is
     constant CORE_BUSY_REG_ADDRESS : natural := CORE_RESULT_REG_ADDRESS + ITTERATIONS_SIZE;
     constant CORE_VALID_REG_ADDRESS : natural := CORE_BUSY_REG_ADDRESS + NORMAL_REG_SIZE;
 
+    -- Control constants
+    -- Commands:
+    constant COMMAND_NO_OPERATION : natural := 0;
+    constant COMMAND_LOAD_OUTPUTS : natural := 1;
+    constant COMMAND_START_CALCULATION : natural := 2;
+    constant COMMAND_RESET : natural := 3;
+
+    -- Command statuses:
+    constant COMMAND_STATUS_SUCCESS : unsigned(NORMAL_REG_SIZE - 1 downto 0) := to_unsigned(0, NORMAL_REG_SIZE);
+    constant COMMAND_STATUS_BUSY : unsigned(NORMAL_REG_SIZE - 1 downto 0) := to_unsigned(1, NORMAL_REG_SIZE);
+    constant COMMAND_STATUS_INVALID_COMMAND : unsigned(NORMAL_REG_SIZE - 1 downto 0) := to_unsigned(2, NORMAL_REG_SIZE);
+    constant COMMAND_STATUS_INVALID_CORE_ADDRESS : unsigned(NORMAL_REG_SIZE - 1 downto 0) := to_unsigned(3, NORMAL_REG_SIZE);
+    constant COMMAND_STATUS_BUSY_CORE : unsigned(NORMAL_REG_SIZE - 1 downto 0) := to_unsigned(4, NORMAL_REG_SIZE);
+    constant COMMAND_STATUS_AFTER_RESET : unsigned(NORMAL_REG_SIZE - 1 downto 0) := to_unsigned(5, NORMAL_REG_SIZE);
+    constant COMMAND_STATUS_UNKNOWN_ERROR : unsigned(NORMAL_REG_SIZE - 1 downto 0) := to_unsigned(255, NORMAL_REG_SIZE);
+
     -- Control registers
     signal cluster_command_reg, cluster_command_next : unsigned(NORMAL_REG_SIZE - 1 downto 0) := (others => '0');
     signal cluster_command_status_reg, cluster_command_status_next : unsigned(NORMAL_REG_SIZE - 1 downto 0) := (others => '0');
@@ -133,7 +151,8 @@ architecture RTL of mand_cluster_avalon_mm is
     signal core_valid_reg, core_valid_next : std_logic := '0';
 
     -- Additonal registers
-    signal cores_i_start_reg, cores_i_start_next : unsigned(CORES_COUNT - 1 downto 0) := (others => '0');
+    signal cores_start_reg, cores_start_next : unsigned(CORES_COUNT - 1 downto 0) := (others => '0');
+    signal cores_reset_reg, cores_reset_next : unsigned(CORES_COUNT - 1 downto 0) := (others => '1');
 
     signal cores_results : array_of_unsigned(CORES_COUNT - 1 downto 0)(ITTERATIONS_SIZE - 1 downto 0) := (others => (others => '0'));
     signal cores_busy_flags : std_logic_vector(CORES_COUNT - 1 downto 0) := (others => '0');
@@ -149,55 +168,37 @@ begin
         if rising_edge(clk) then
             if sync_reset = '1' then
                 -- Reset registers
-                cluster_command_reg <= (others => '0');
-                cluster_command_status_reg <= (others => '0');
-                core_address_reg <= (others => '0');
-
-                core_x_reg <= (others => '0');
-                core_y_reg <= (others => '0');
-                core_itterations_max_reg <= (others => '0');
+                cluster_command_status_reg <= COMMAND_STATUS_AFTER_RESET;
 
                 core_result_reg <= (others => '0');
                 core_busy_reg <= '0';
                 core_valid_reg <= '0';
 
-                cores_i_start_reg <= (others => '0');
+                cores_start_reg <= (others => '0');
+                cores_reset_reg <= (others => '1');
             else
                 -- Control registers
-                cluster_command_reg <= cluster_command_next;
                 cluster_command_status_reg <= cluster_command_status_next;
+
                 -- Cores output registers
                 core_result_reg <= core_result_next;
                 core_busy_reg <= core_busy_next;
                 core_valid_reg <= core_valid_next;
 
                 -- Additional registers
-                cores_i_start_reg <= cores_i_start_next;
-
-                if avs_write = '1' then
-                    -- cluster_command_next <= unsigned(avalon_write_mm(COMMAND_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto COMMAND_REG_ADDRESS));
-                    core_address_reg <= unsigned(avalon_write_mm(CORE_ADDRESS_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto CORE_ADDRESS_REG_ADDRESS));
-                    core_x_reg <= signed(avalon_write_mm(CORE_X_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_X_REG_ADDRESS));
-                    core_y_reg <= signed(avalon_write_mm(CORE_Y_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_Y_REG_ADDRESS));
-                    core_itterations_max_reg <= unsigned(avalon_write_mm(CORE_ITTERATIONS_MAX_REG_ADDRESS + ITTERATIONS_SIZE - 1 downto CORE_ITTERATIONS_MAX_REG_ADDRESS));
-                else
-                    -- Cores input registers
-                    core_address_reg <= core_address_next;
-                    core_x_reg <= core_x_next;
-                    core_y_reg <= core_y_next;
-                    core_itterations_max_reg <= core_itterations_max_next;
-                end if;
-
+                cores_start_reg <= cores_start_next;
+                cores_reset_reg <= cores_reset_next;
             end if;
         end if;
     end process;
 
     -- Avalon-MM slave interface
     process (clk)
-        variable avs_bit_address : integer := to_integer(unsigned(avs_address)) * 8;
-
+        variable avs_bit_address : integer;
     begin
         if rising_edge(clk) then
+            avs_bit_address := to_integer(unsigned(avs_address)) * 8;
+
             if sync_reset = '1' then
                 -- Reset Registers
                 avs_readdata <= (others => '0');
@@ -205,8 +206,49 @@ begin
             elsif avs_write = '1' then
                 -- Avalon-MM write operation
 
-                avalon_write_mm(avs_bit_address + 8 - 1 downto avs_bit_address) <= avs_readdata;
+                avalon_write_mm(avs_bit_address + 8 - 1 downto avs_bit_address) <= avs_writedata;
 
+                -- In case of write to command register, execute command
+                if avs_bit_address = COMMAND_REG_ADDRESS then
+
+                    -- By default, return success
+                    cluster_command_status_next <= COMMAND_STATUS_SUCCESS;
+
+                    case to_integer(unsigned(avs_writedata)) is
+                        when COMMAND_NO_OPERATION =>
+                            -- Do nothing
+
+                        when COMMAND_LOAD_OUTPUTS =>
+                            if core_address_reg >= CORES_COUNT then
+                                cluster_command_status_next <= COMMAND_STATUS_INVALID_CORE_ADDRESS;
+                            else
+                                core_result_next <= cores_results(to_integer(core_address_reg));
+                                core_busy_next <= cores_busy_flags(to_integer(core_address_reg));
+                                core_valid_next <= cores_valid_flags(to_integer(core_address_reg));
+                            end if;
+
+                        when COMMAND_START_CALCULATION =>
+                            if core_address_reg >= CORES_COUNT then
+                                cluster_command_status_next <= COMMAND_STATUS_INVALID_CORE_ADDRESS;
+                            elsif cores_busy_flags(to_integer(core_address_reg)) = '1' then
+                                cluster_command_status_next <= COMMAND_STATUS_BUSY_CORE;
+                            else
+                                cores_start_next(to_integer(core_address_reg)) <= '1';
+                            end if;
+
+                        when COMMAND_RESET =>
+                            if core_address_reg >= CORES_COUNT then
+                                cluster_command_status_next <= COMMAND_STATUS_INVALID_CORE_ADDRESS;
+                            else
+                                cores_reset_next(to_integer(core_address_reg)) <= '1';
+                            end if;
+
+                        when others =>
+                            cluster_command_status_next <= COMMAND_STATUS_INVALID_COMMAND;
+
+                    end case;
+
+                end if;
             elsif avs_read = '1' then
                 -- Avalon-MM read operation
 
@@ -214,6 +256,8 @@ begin
             else
                 -- By default, return 0
                 avs_readdata <= (others => '0');
+                cores_start_next <= (others => '0');
+                cores_reset_next <= (others => '0');
             end if;
 
         end if;
@@ -229,9 +273,9 @@ begin
             )
             port map(
                 clk => clk,
-                sync_reset => sync_reset,
+                sync_reset => cores_reset_reg(i),
 
-                i_start => cores_i_start_reg(i),
+                i_start => cores_start_reg(i),
 
                 i_x => core_x_reg,
                 i_y => core_y_reg,
@@ -264,5 +308,13 @@ begin
     avalon_read_mm(CORE_RESULT_REG_ADDRESS + ITTERATIONS_SIZE - 1 downto CORE_RESULT_REG_ADDRESS) <= std_logic_vector(core_result_reg);
     avalon_read_mm(CORE_BUSY_REG_ADDRESS) <= core_busy_reg;
     avalon_read_mm(CORE_VALID_REG_ADDRESS) <= core_valid_reg;
+
+    -- Avalon-MM write interface
+    cluster_command_reg <= unsigned(avalon_write_mm(COMMAND_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto COMMAND_REG_ADDRESS));
+    core_address_reg <= unsigned(avalon_write_mm(CORE_ADDRESS_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto CORE_ADDRESS_REG_ADDRESS));
+
+    core_x_reg <= signed(avalon_write_mm(CORE_X_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_X_REG_ADDRESS));
+    core_y_reg <= signed(avalon_write_mm(CORE_Y_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_Y_REG_ADDRESS));
+    core_itterations_max_reg <= unsigned(avalon_write_mm(CORE_ITTERATIONS_MAX_REG_ADDRESS + ITTERATIONS_SIZE - 1 downto CORE_ITTERATIONS_MAX_REG_ADDRESS));
 
 end architecture;
