@@ -30,7 +30,7 @@ entity mandelbrot_core is
         FIXED_SIZE : natural := 128; -- Size of the input i_x and i_y values
         FIXED_INTEGER_SIZE : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
 
-        ITERATIONS_SIZE : natural := 64 -- Size of the output iterations value (unsigned long by default)
+        ITTERATIONS_SIZE : natural := 64 -- Size of the output iterations value (unsigned long by default)
     );
     port (
         clk : in std_logic;
@@ -46,10 +46,10 @@ entity mandelbrot_core is
 
         i_x : in signed(FIXED_SIZE - 1 downto 0);
         i_y : in signed(FIXED_SIZE - 1 downto 0);
-        i_iterations_max : in unsigned(ITERATIONS_SIZE - 1 downto 0);
+        i_iterations_max : in unsigned(ITTERATIONS_SIZE - 1 downto 0);
 
         -- Outputs
-        o_result : out unsigned(ITERATIONS_SIZE - 1 downto 0);
+        o_result : out unsigned(ITTERATIONS_SIZE - 1 downto 0);
 
         -- Core is busy when calculation is in progress
         o_busy : out std_logic;

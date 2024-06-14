@@ -11,7 +11,7 @@ entity mandelbrot_cluser is
         FIXED_SIZE : natural := 4; -- Size of the input i_x and i_y values
 
         -- Not recommended to change, need to update driver code
-        constant ITERATIONS_SIZE : natural := 2; -- Size of the output iterations value (unsigned long by default)
+        constant ITTERATIONS_SIZE : natural := 2; -- Size of the output iterations value (unsigned long by default)
         constant NORMAL_REG_SIZE : natural := 32; -- Size of the normal registers
         constant CORES_STATUS_SIZE : natural := 512 -- Size of registers that hold the status of all cores (should be at least CORES_COUNT bits long)
     );
@@ -26,7 +26,7 @@ entity mandelbrot_cluser is
 
         i_x : in signed(FIXED_SIZE - 1 downto 0); -- Real part of the input value to load into the core
         i_y : in signed(FIXED_SIZE - 1 downto 0); -- Imaginary part of the input value to load into the core
-        i_iterations_max : in unsigned(ITERATIONS_SIZE - 1 downto 0); -- Maximum number of iterations to execute
+        i_iterations_max : in unsigned(ITTERATIONS_SIZE - 1 downto 0); -- Maximum number of iterations to execute
 
         -- Output values
         o_command_status : out std_logic_vector(NORMAL_REG_SIZE - 1 downto 0); -- Status of the last executed command
@@ -35,7 +35,7 @@ entity mandelbrot_cluser is
         -- Meta data about current FPGA configuration
         o_fixed_size : out std_logic_vector(NORMAL_REG_SIZE - 1 downto 0); -- Resolution of the input values
         o_fixed_integer_size : out std_logic_vector(NORMAL_REG_SIZE - 1 downto 0); -- Number of fixed bits in the output value
-        o_iterations_size : out std_logic_vector(NORMAL_REG_SIZE - 1 downto 0); -- Resolution of the output iterations value
+        o_ITTERATIONS_SIZE : out std_logic_vector(NORMAL_REG_SIZE - 1 downto 0); -- Resolution of the output iterations value
         o_cores_count : out std_logic_vector(NORMAL_REG_SIZE - 1 downto 0); -- Number of cores in the FPGA
 
         -- Cores status values
@@ -44,7 +44,7 @@ entity mandelbrot_cluser is
 
         -- Mandelbrot core output values
         -- Read result command with the address of the core to read from will be stored here
-        o_result : out std_logic_vector(ITERATIONS_SIZE - 1 downto 0) -- Output value of particular mandelbrot core
+        o_result : out std_logic_vector(ITTERATIONS_SIZE - 1 downto 0) -- Output value of particular mandelbrot core
     );
 end entity;
 
@@ -63,7 +63,7 @@ architecture RTL of mandelbrot_cluser is
     -- Cores output registers
     signal core_busy_reg : std_logic_vector(CORES_STATUS_SIZE - 1 downto 0) := (others => '0');
     signal core_valid_reg : std_logic_vector(CORES_STATUS_SIZE - 1 downto 0) := (others => '0');
-    signal core_result_reg, core_result_next : std_logic_vector(ITERATIONS_SIZE - 1 downto 0) := (others => '0');
+    signal core_result_reg, core_result_next : std_logic_vector(ITTERATIONS_SIZE - 1 downto 0) := (others => '0');
 
     signal cores_results_reg : array_of_unsigned(CORES_COUNT - 1 downto 0)(o_result'range) := (others => (others => '0'));
 
@@ -105,7 +105,7 @@ begin
             generic map(
                 FIXED_SIZE => FIXED_SIZE,
                 FIXED_INTEGER_SIZE => FIXED_INTEGER_SIZE,
-                ITERATIONS_SIZE => ITERATIONS_SIZE
+                ITTERATIONS_SIZE => ITTERATIONS_SIZE
             )
             port map(
                 clk => clk,
@@ -128,7 +128,7 @@ begin
     -- Cluster configuration
     o_fixed_integer_size <= std_logic_vector(to_unsigned(FIXED_INTEGER_SIZE, NORMAL_REG_SIZE));
     o_fixed_size <= std_logic_vector(to_unsigned(FIXED_SIZE, NORMAL_REG_SIZE));
-    o_iterations_size <= std_logic_vector(to_unsigned(ITERATIONS_SIZE, NORMAL_REG_SIZE));
+    o_ITTERATIONS_SIZE <= std_logic_vector(to_unsigned(ITTERATIONS_SIZE, NORMAL_REG_SIZE));
     o_cores_count <= std_logic_vector(to_unsigned(CORES_COUNT, NORMAL_REG_SIZE));
 
     -- Cores ouputs

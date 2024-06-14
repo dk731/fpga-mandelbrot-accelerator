@@ -84,7 +84,7 @@ def generate_test_benches(
                     "generics": {
                         "FIXED_SIZE": fixed_size,
                         "FIXED_INTEGER_SIZE": fixed_integer_size,
-                        "ITERATIONS_SIZE": itterations_size,
+                        "ITTERATIONS_SIZE": itterations_size,
                         "INPUT_X": input_x,
                         "INPUT_Y": input_y,
                         "INPUT_ITERATIONS_MAX": "".join(

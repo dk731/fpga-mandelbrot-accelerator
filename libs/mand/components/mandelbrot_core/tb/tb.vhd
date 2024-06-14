@@ -18,7 +18,7 @@ entity tb is
 
         FIXED_SIZE : natural := 16; -- Size of the input i_x and i_y values
         FIXED_INTEGER_SIZE : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
-        ITERATIONS_SIZE : natural := 64; -- Size of the output iterations value (unsigned long by default)
+        ITTERATIONS_SIZE : natural := 64; -- Size of the output iterations value (unsigned long by default)
 
         INPUT_X : signed(2048 - 1 downto 0); -- X coordinate of the input
         INPUT_Y : signed(2048 - 1 downto 0); -- Y coordinate of the input
@@ -43,14 +43,14 @@ architecture RTL of tb is
     -- Core Inputs
     signal core_x : signed(FIXED_SIZE - 1 downto 0) := (others => '0');
     signal core_y : signed(FIXED_SIZE - 1 downto 0) := (others => '0');
-    signal core_iterations_max : unsigned(ITERATIONS_SIZE - 1 downto 0) := (others => '0');
+    signal core_iterations_max : unsigned(ITTERATIONS_SIZE - 1 downto 0) := (others => '0');
 
     -- Core Outputs
-    signal core_result : unsigned(ITERATIONS_SIZE - 1 downto 0) := (others => '0');
+    signal core_result : unsigned(ITTERATIONS_SIZE - 1 downto 0) := (others => '0');
     signal core_busy : std_logic := '0';
     signal core_valid : std_logic := '0';
 
-    constant ZEROS : unsigned(ITERATIONS_SIZE - 1 downto 0) := (others => '0');
+    constant ZEROS : unsigned(ITTERATIONS_SIZE - 1 downto 0) := (others => '0');
 
 begin
     clk <= not clk after CLK_PERIOD/2;
@@ -59,7 +59,7 @@ begin
         generic map(
             FIXED_SIZE => FIXED_SIZE,
             FIXED_INTEGER_SIZE => FIXED_INTEGER_SIZE,
-            ITERATIONS_SIZE => ITERATIONS_SIZE
+            ITTERATIONS_SIZE => ITTERATIONS_SIZE
         )
         port map(
             clk => clk,
@@ -112,7 +112,7 @@ begin
 
                 core_x <= INPUT_X(FIXED_SIZE - 1 downto 0);
                 core_y <= INPUT_Y(FIXED_SIZE - 1 downto 0);
-                core_iterations_max <= INPUT_ITERATIONS_MAX(ITERATIONS_SIZE - 1 downto 0);
+                core_iterations_max <= INPUT_ITERATIONS_MAX(ITTERATIONS_SIZE - 1 downto 0);
 
                 wait for 50 ns;
 
