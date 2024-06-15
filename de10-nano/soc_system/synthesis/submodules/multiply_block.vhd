@@ -80,7 +80,10 @@ begin
         end if;
     end process;
 
-    process (clk, loop_state_reg, i_x, i_y, mult_res, mult_rounded)
+    process (
+        clk, loop_state_reg, i_x, i_y, mult_res, mult_rounded, x_reg, y_reg, result_reg,
+        busy_reg, valid_reg, int_overflow_reg, i_start
+        )
     begin
         -- default
         loop_state_next <= loop_state_reg;

@@ -169,7 +169,14 @@ begin
         );
 
     -- Main loop state machine
-    process (clk, sync_reset, i_start, i_x, i_y, i_iterations_max, mult_start_reg, mult_valid_reg, mult_busy_reg, mult_out_reg, mult_overflow_flag_reg, x_squared_reg, y_squared_reg, x0_reg, y0_reg, x_reg, y_reg, iterations_reg, x_temp_reg, result_reg, busy_reg, valid_reg)
+    -- Due to Quartus Lite being scam, we cant use VHDL 2008 features for the custom IP.
+    -- So we cant use simplified sensitivity list (all) here.
+    process (
+        clk, sync_reset, i_start, i_x, i_y, i_iterations_max, mult_start_reg, mult_valid_reg,
+        mult_busy_reg, mult_out_reg, mult_overflow_flag_reg, x_squared_reg, y_squared_reg, x0_reg,
+        y0_reg, x_reg, y_reg, iterations_reg, x_temp_reg, result_reg, busy_reg, valid_reg,
+        mult_x_reg, mult_y_reg, loop_state_reg, max_iterations_reg, mult_overflow_reg
+        )
     begin
         -- default
         mult_start_next <= '0';

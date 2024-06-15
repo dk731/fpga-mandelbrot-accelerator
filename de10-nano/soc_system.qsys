@@ -62,6 +62,22 @@
          type = "String";
       }
    }
+   element soc_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element soc_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
    element subsystemA_0
    {
       datum _sortIndex
@@ -634,12 +650,13 @@
    kind="mand_cluster_avalon_mm"
    version="1.0"
    enabled="1">
+  <parameter name="AVALON_ADDRESS_WIDTH" value="10" />
   <parameter name="AVALON_DATA_WIDTH" value="8" />
-  <parameter name="CORES_COUNT" value="2" />
+  <parameter name="CORES_COUNT" value="20" />
   <parameter name="FIXED_INTEGER_SIZE" value="5" />
-  <parameter name="FIXED_SIZE" value="32" />
-  <parameter name="ITTERATIONS_SIZE" value="32" />
-  <parameter name="NORMAL_REG_SIZE" value="32" />
+  <parameter name="FIXED_SIZE" value="64" />
+  <parameter name="FLAG_REG_SIZE" value="128" />
+  <parameter name="NORMAL_REG_SIZE" value="64" />
  </module>
  <module
    name="mm_bridge_0"

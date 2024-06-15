@@ -94,12 +94,13 @@ architecture rtl of soc_system is
 
 	component mand_cluster_avalon_mm is
 		generic (
-			CORES_COUNT        : natural := 2;
-			FIXED_SIZE         : natural := 32;
-			FIXED_INTEGER_SIZE : natural := 5;
-			ITTERATIONS_SIZE   : natural := 32;
-			AVALON_DATA_WIDTH  : natural := 8;
-			NORMAL_REG_SIZE    : natural := 32
+			CORES_COUNT          : natural := 2;
+			FIXED_SIZE           : natural := 32;
+			FIXED_INTEGER_SIZE   : natural := 5;
+			AVALON_DATA_WIDTH    : natural := 8;
+			AVALON_ADDRESS_WIDTH : natural := 10;
+			FLAG_REG_SIZE        : natural := 124;
+			NORMAL_REG_SIZE      : natural := 32
 		);
 		port (
 			clk           : in  std_logic                    := 'X';             -- clk
@@ -423,12 +424,13 @@ begin
 
 	mand_cluster_avalon_mm_0 : component mand_cluster_avalon_mm
 		generic map (
-			CORES_COUNT        => 2,
-			FIXED_SIZE         => 32,
-			FIXED_INTEGER_SIZE => 5,
-			ITTERATIONS_SIZE   => 32,
-			AVALON_DATA_WIDTH  => 8,
-			NORMAL_REG_SIZE    => 32
+			CORES_COUNT          => 20,
+			FIXED_SIZE           => 64,
+			FIXED_INTEGER_SIZE   => 5,
+			AVALON_DATA_WIDTH    => 8,
+			AVALON_ADDRESS_WIDTH => 10,
+			FLAG_REG_SIZE        => 128,
+			NORMAL_REG_SIZE      => 64
 		)
 		port map (
 			clk           => clk_clk,                                                             --          clock.clk

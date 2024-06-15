@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="soc_system" kind="system" version="23.1" fabric="QSYS">
  <!-- Format version 23.1 991 (Future versions may contain additional information.) -->
- <!-- 2024.06.14.21:59:16 -->
+ <!-- 2024.06.15.23:29:35 -->
  <!-- A collection of modules and connections -->
  <parameter name="clockCrossingAdapter">
   <type>com.altera.sopcmodel.ensemble.EClockAdapter</type>
@@ -53,7 +53,7 @@
  </parameter>
  <parameter name="generationId">
   <type>int</type>
-  <value>1718391500</value>
+  <value>1718483327</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>true</visible>
@@ -39692,7 +39692,7 @@ parameters are a RESULT of the module parameters. -->
 the requested settings for a module instance. -->
   <parameter name="CORES_COUNT">
    <type>int</type>
-   <value>2</value>
+   <value>20</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -39700,7 +39700,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="FIXED_SIZE">
    <type>int</type>
-   <value>32</value>
+   <value>64</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -39714,14 +39714,6 @@ the requested settings for a module instance. -->
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
-  <parameter name="ITTERATIONS_SIZE">
-   <type>int</type>
-   <value>32</value>
-   <derived>false</derived>
-   <enabled>true</enabled>
-   <visible>true</visible>
-   <valid>true</valid>
-  </parameter>
   <parameter name="AVALON_DATA_WIDTH">
    <type>int</type>
    <value>8</value>
@@ -39730,9 +39722,25 @@ the requested settings for a module instance. -->
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
+  <parameter name="AVALON_ADDRESS_WIDTH">
+   <type>int</type>
+   <value>10</value>
+   <derived>false</derived>
+   <enabled>true</enabled>
+   <visible>true</visible>
+   <valid>true</valid>
+  </parameter>
+  <parameter name="FLAG_REG_SIZE">
+   <type>int</type>
+   <value>128</value>
+   <derived>false</derived>
+   <enabled>true</enabled>
+   <visible>true</visible>
+   <valid>true</valid>
+  </parameter>
   <parameter name="NORMAL_REG_SIZE">
    <type>int</type>
-   <value>32</value>
+   <value>64</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -44503,5 +44511,5 @@ parameters are a RESULT of the module parameters. -->
   <version>23.1</version>
  </plugin>
  <reportVersion>23.1 991</reportVersion>
- <uniqueIdentifier>0242D2FC663500000190181E175E</uniqueIdentifier>
+ <uniqueIdentifier>024283D0EE3E000001901D972F13</uniqueIdentifier>
 </EnsembleReport>
