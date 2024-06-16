@@ -9,19 +9,19 @@ use mand.functions.all;
 entity mand_cluster_avalon_mm is
     generic (
         -- Cluster configuration
-        CORES_COUNT : natural := 128; -- Number of cores to use
+        CORES_COUNT : natural := 4; -- Number of cores to use
 
         -- Each Mandelbrot core configuration
-        FIXED_SIZE : natural := 64; -- Size of the input i_x and i_y values
-        FIXED_INTEGER_SIZE : natural := 5; -- Fixed point integer bits for the i_x and i_y inputs
+        FIXED_SIZE : natural := 8; -- Size of the input i_x and i_y values
+        FIXED_INTEGER_SIZE : natural := 4; -- Fixed point integer bits for the i_x and i_y inputs
 
         -- Avalon-MM configuration
         constant AVALON_DATA_WIDTH : natural := 8; -- For know I will use 8-bit data width
         -- As this value cannot really be calculated using generics, I will hardcode it, make sure that configuration fits this range
         constant AVALON_ADDRESS_WIDTH : natural := 10;
 
-        constant FLAG_REG_SIZE : natural := 128;
-        constant NORMAL_REG_SIZE : natural := 64 -- Dont change this, or driver will have to be compiled
+        constant FLAG_REG_SIZE : natural := 8;
+        constant NORMAL_REG_SIZE : natural := 8 -- Dont change this, or driver will have to be compiled
     );
     port (
         clk : in std_logic;

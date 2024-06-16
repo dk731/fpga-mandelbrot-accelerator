@@ -27,10 +27,10 @@ use ieee.numeric_std.all;
 
 entity mandelbrot_core is
     generic (
-        FIXED_SIZE : natural := 128; -- Size of the input i_x and i_y values
+        FIXED_SIZE : natural := 8; -- Size of the input i_x and i_y values
         FIXED_INTEGER_SIZE : natural := 4; -- Fixed floating point integer bits for the i_x and i_y inputs
 
-        ITTERATIONS_SIZE : natural := 64 -- Size of the output iterations value (unsigned long by default)
+        ITTERATIONS_SIZE : natural := 8 -- Size of the output iterations value (unsigned long by default)
     );
     port (
         clk : in std_logic;

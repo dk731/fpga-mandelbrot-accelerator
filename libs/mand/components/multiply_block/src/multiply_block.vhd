@@ -4,8 +4,8 @@ use ieee.numeric_std.all;
 
 entity multiply_block is
     generic (
-        FIXED_SIZE : natural := 4;
-        FIXED_INTEGER_SIZE : natural := 2
+        FIXED_SIZE : natural := 8;
+        FIXED_INTEGER_SIZE : natural := 4
     );
     port (
         clk : in std_logic;
