@@ -3,14 +3,20 @@ import matplotlib
 matplotlib.use("tkagg")
 import matplotlib.pyplot as plt
 
+# AMD Ryzen 7 7700 8-Core Processor, 4.3 GHz
+# Ubuntu 20.04, Linux 6.5.0
+# 32GB DDR5
+# 1TB NVMe SSD
 pc_results = [
-    # (8, 98823994465856.31),
-    (16, 497014305.3470466),
-    (32, 525937757.869748),
-    (64, 328267428.9593108),
-    (128, 104028539.73886263),
+    (8, 656360660),
+    (16, 591629608),
+    (32, 556760071),
+    (64, 339173176),
+    (128, 129761740),
 ]
 
+# DE10-Nano, Cyclone V SoC
+# Debian 12, Linux 6.1.68
 fpga_results = [
     (8, 500_000),
     (16, 500_000),

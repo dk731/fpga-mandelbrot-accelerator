@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 fixed = { version = "1" }
 lazy_static = { version = "1.4" }
+rand = { version = "0.8" }

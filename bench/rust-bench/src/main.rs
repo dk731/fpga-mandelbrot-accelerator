@@ -1,6 +1,6 @@
-use std::{any::type_name, vec};
-
 use fixed::{traits::Fixed, types::extra::*, *};
+use rand::Rng;
+use std::any::type_name;
 
 fn calculate_mandelbrot<T: Fixed>(x0: T, y0: T, max_itterations: u64) -> u64 {
     let bound_radius = T::from_num(4);
@@ -26,8 +26,8 @@ fn calculate_mandelbrot<T: Fixed>(x0: T, y0: T, max_itterations: u64) -> u64 {
 }
 
 fn perform_test<T: Fixed>() -> f64 {
-    let x = T::from_num(0.2f64);
-    let y = T::from_num(0.2f64);
+    let x = T::from_num(rand::random::<f64>() * 0.2);
+    let y = T::from_num(rand::random::<f64>() * 0.2);
 
     let max_itterations = 1_000_000_000;
 
@@ -36,6 +36,7 @@ fn perform_test<T: Fixed>() -> f64 {
 
     println!("Fixed point type: {:?}", type_name::<T>());
 
+    println!("Point: ({}, {})", x, y);
     println!("Itterations: {}", itterations);
     println!("Time: {:?}", start_time.elapsed());
 
