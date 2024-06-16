@@ -1,11 +1,6 @@
 use std::{
-    collections::{HashMap, HashSet},
-    io::Read,
-    rc::Rc,
-    sync::{
-        atomic::{compiler_fence, Ordering},
-        Arc, Mutex,
-    },
+    collections::HashMap,
+    sync::atomic::{compiler_fence, Ordering},
 };
 
 use anyhow::Result;
@@ -14,21 +9,30 @@ use tokio::sync::mpsc::error::TryRecvError;
 
 use crate::mand_cluster::MandCluster;
 
-type SchedulerN = u64;
-type SchedulerF = u128;
-type SchedulerP = i128;
+pub type SchedulerN = u64;
+pub type SchedulerF = u128;
+pub type SchedulerP = i128;
 
-#[derive(Clone)]
-struct CalculationRequest {
-    x: SchedulerP,
-    y: SchedulerP,
-    itterations_max: SchedulerN,
+#[derive(Deserialize, Serialize)]
+pub struct CalculationRequest {
+    pub x: SchedulerP,
+    pub y: SchedulerP,
+    pub itterations_max: SchedulerN,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct CalculationResponse {
+    pub result: SchedulerN,
+}
+
+struct CalculationRequestWrapper {
+    request: CalculationRequest,
 
     response_channel: tokio::sync::mpsc::Sender<Result<SchedulerN>>,
 }
 
 pub struct ClusterScheduler {
-    calculation_sender: tokio::sync::mpsc::Sender<CalculationRequest>,
+    calculation_sender: tokio::sync::mpsc::Sender<CalculationRequestWrapper>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -63,7 +67,9 @@ impl Default for ClusterScheduler {
 }
 
 impl ClusterScheduler {
-    fn cluster_thread(mut calculation_receiver: tokio::sync::mpsc::Receiver<CalculationRequest>) {
+    fn cluster_thread(
+        mut calculation_receiver: tokio::sync::mpsc::Receiver<CalculationRequestWrapper>,
+    ) {
         compiler_fence(Ordering::SeqCst);
 
         let mut cluster = MandCluster::<SchedulerN, SchedulerF, SchedulerP>::new().unwrap();
@@ -95,8 +101,8 @@ impl ClusterScheduler {
         println!("Cluster busy flags: {:b}", cluster.cores_busy_flags());
         println!("Cluster valid flags: {:b}", cluster.cores_valid_flags());
 
-        let mut running_tasks: HashMap<u64, CalculationRequest> = HashMap::new();
-        let mut queue_tasks: Vec<CalculationRequest> = Vec::new();
+        let mut running_tasks: HashMap<u64, CalculationRequestWrapper> = HashMap::new();
+        let mut queue_tasks: Vec<CalculationRequestWrapper> = Vec::new();
 
         loop {
             running_tasks.retain(|core_id, task| {
@@ -163,9 +169,9 @@ impl ClusterScheduler {
                         println!("Starting core: {}", target_core);
 
                         cluster.load_core_address(target_core);
-                        cluster.load_core_x(task.x);
-                        cluster.load_core_y(task.y);
-                        cluster.load_core_itterations_max(task.itterations_max);
+                        cluster.load_core_x(task.request.x);
+                        cluster.load_core_y(task.request.y);
+                        cluster.load_core_itterations_max(task.request.itterations_max);
 
                         cluster.load_command(ClusterCommand::Start.into());
 
@@ -190,24 +196,22 @@ impl ClusterScheduler {
     }
 
     pub async fn run_callculation(
-        &mut self,
-        x: SchedulerP,
-        y: SchedulerP,
-        itterations_max: SchedulerN,
-    ) -> Result<SchedulerN> {
+        &self,
+        request: CalculationRequest,
+    ) -> Result<CalculationResponse> {
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);
 
         self.calculation_sender
-            .send(CalculationRequest {
-                x,
-                y,
-                itterations_max,
+            .send(CalculationRequestWrapper {
+                request,
                 response_channel: tx,
             })
             .await
             .unwrap();
 
-        rx.recv().await.unwrap()
+        let result = rx.recv().await.unwrap()?;
+
+        Ok(CalculationResponse { result })
     }
 }
 
