@@ -5,6 +5,8 @@ use std::fmt::Debug;
 use std::io;
 use std::mem::size_of;
 
+const LOAD_DELAY: std::time::Duration = std::time::Duration::from_nanos(20);
+
 // Reference to the MandCluster memory space
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -91,20 +93,8 @@ where
             ));
         }
 
-        println!("Raw Pointer: {:?}", ptr);
-
         let cluster: &mut MandClusterInner<N, F, P> =
             unsafe { &mut *(ptr as *mut MandClusterInner<N, F, P>) };
-
-        let qwe: *const MandClusterInner<N, F, P> = cluster;
-        let void_ptr: *mut c_void = qwe as *mut c_void;
-
-        println!("void_ptr: {:?}", void_ptr);
-
-        let qwe: *const N = &cluster.command;
-        let void_ptr: *mut c_void = qwe as *mut c_void;
-
-        println!("Command raw ptr: {:?}", void_ptr);
 
         Ok(Self {
             __inner: cluster,
@@ -156,27 +146,27 @@ where
     // Setters
     pub fn load_command(&mut self, command: N) {
         self.__inner.command = command;
-        std::thread::sleep(std::time::Duration::from_micros(1));
+        std::thread::sleep(LOAD_DELAY);
     }
 
     pub fn load_core_address(&mut self, core_address: N) {
         self.__inner.core_address = core_address;
-        std::thread::sleep(std::time::Duration::from_micros(1));
+        std::thread::sleep(LOAD_DELAY);
     }
 
     pub fn load_core_x(&mut self, core_x: P) {
         self.__inner.core_x = core_x;
-        std::thread::sleep(std::time::Duration::from_micros(1));
+        std::thread::sleep(LOAD_DELAY);
     }
 
     pub fn load_core_y(&mut self, core_y: P) {
         self.__inner.core_y = core_y;
-        std::thread::sleep(std::time::Duration::from_micros(1));
+        std::thread::sleep(LOAD_DELAY);
     }
 
     pub fn load_core_itterations_max(&mut self, core_itterations_max: N) {
         self.__inner.core_itterations_max = core_itterations_max;
-        std::thread::sleep(std::time::Duration::from_micros(1));
+        std::thread::sleep(LOAD_DELAY);
     }
 
     // Getters
