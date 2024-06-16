@@ -424,8 +424,8 @@ begin
 
 	mand_cluster_avalon_mm_0 : component mand_cluster_avalon_mm
 		generic map (
-			CORES_COUNT          => 20,
-			FIXED_SIZE           => 64,
+			CORES_COUNT          => 6,
+			FIXED_SIZE           => 128,
 			FIXED_INTEGER_SIZE   => 5,
 			AVALON_DATA_WIDTH    => 8,
 			AVALON_ADDRESS_WIDTH => 10,

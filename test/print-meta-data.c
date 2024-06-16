@@ -11,12 +11,6 @@
 #define BRIDGE 0xC0000000
 #define BRIDGE_SPAN 0x0080
 
-// --      command,                        - RW, size: NORMAL_REG_SIZE
-// --      command_status,                 - RO, size: NORMAL_REG_SIZE
-// --      core_address,                   - RW, size: NORMAL_REG_SIZE
-// --      cores_busy_flag,                - RO, size: CORES_STATUS_REG_SIZE
-// --      cores_valid_flag                - RO, size: CORES_STATUS_REG_SIZE
-
 struct __attribute__((__packed__)) mand_cluster
 {
     uint64_t cores_count;
@@ -34,9 +28,18 @@ struct __attribute__((__packed__)) mand_cluster
     uint64_t core_valid;
 
     uint64_t core_max_itterations;
-    uint64_t core_x;
-    uint64_t core_y;
+    uint8_t core_x[128 / 8];
+    uint8_t core_y[128 / 8];
 };
+
+void printf_bits(uint8_t *bits, int size)
+{
+    for (int i = size; i >= 0; i--)
+    {
+        printf("%d", (bits[i / 8] >> (i % 8)) & 1);
+    }
+    printf("\n");
+}
 
 int main(int argc, char **argv)
 {
@@ -73,29 +76,36 @@ int main(int argc, char **argv)
     printf("Command: %" PRIu64 "\n", cluster->command);
     printf("Command Status: %" PRIu64 "\n", cluster->command_status);
     printf("Core Address: %" PRIu64 "\n", cluster->core_address);
-    printf("Cores Busy Flag: %s\n", cluster->cores_busy_flag);
-    printf("Cores Valid Flag: %s\n", cluster->cores_valid_flag);
+    printf("Core Busy Flags:");
+    printf_bits(cluster->cores_busy_flag, 128);
+
+    printf("Core Valid Flags:");
+    printf_bits(cluster->cores_valid_flag, 128);
 
     printf("Core Result: %" PRIu64 "\n", cluster->core_result);
     printf("Core Busy: %" PRIu64 "\n", cluster->core_busy);
     printf("Core Valid: %" PRIu64 "\n", cluster->core_valid);
 
     printf("Core Itterations Size: %" PRIu64 "\n", cluster->core_max_itterations);
-    printf("Core X: %" PRIu64 "\n", cluster->core_x);
-    printf("Core Y: %" PRIu64 "\n\n", cluster->core_y);
 
     cluster->core_max_itterations = 10000000;
-
-    cluster->core_x = 0;
-    cluster->core_y = 0;
+    cluster->core_x[4] = 0xff;
+    cluster->core_x[5] = 0xff;
+    cluster->core_y[4] = 0xff;
+    cluster->core_y[5] = 0xff;
 
     printf("");
 
     // Start core
     cluster->command = 2;
     printf("Started core.\n");
-    printf("Core X: %" PRIu64 "\n", cluster->core_x);
-    printf("Core Y: %" PRIu64 "\n\n", cluster->core_y);
+
+    printf("Core X:");
+    printf_bits(cluster->core_x, 128);
+
+    printf("Core Y:");
+    printf_bits(cluster->core_y, 128);
+
     printf("Command Status: %" PRIu64 "\n", cluster->command_status);
 
     printf("Cores Busy Flag: %s\n", cluster->cores_busy_flag);
@@ -105,7 +115,7 @@ int main(int argc, char **argv)
 
     while (cluster->cores_busy_flag[0] == 1)
     {
-        printf("Core is busy.\n");
+        // printf("Core is busy.\n");
     }
 
     time_t end = time(NULL);
@@ -117,6 +127,12 @@ int main(int argc, char **argv)
     cluster->command = 1;
     printf("Started load command.\n");
     printf("Command Status: %" PRIu64 "\n", cluster->command_status);
+
+    printf("Core Busy Flags:");
+    printf_bits(cluster->cores_busy_flag, 128);
+
+    printf("Core Valid Flags:");
+    printf_bits(cluster->cores_valid_flag, 128);
 
     printf("Core Result: %" PRIu64 "\n", cluster->core_result);
     printf("Core Busy: %" PRIu64 "\n", cluster->core_busy);

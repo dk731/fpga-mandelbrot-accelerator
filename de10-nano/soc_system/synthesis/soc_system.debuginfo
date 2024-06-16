@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="soc_system" kind="system" version="23.1" fabric="QSYS">
  <!-- Format version 23.1 991 (Future versions may contain additional information.) -->
- <!-- 2024.06.15.23:29:35 -->
+ <!-- 2024.06.16.12:48:35 -->
  <!-- A collection of modules and connections -->
  <parameter name="clockCrossingAdapter">
   <type>com.altera.sopcmodel.ensemble.EClockAdapter</type>
@@ -53,7 +53,7 @@
  </parameter>
  <parameter name="generationId">
   <type>int</type>
-  <value>1718483327</value>
+  <value>1718531268</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>true</visible>
@@ -39692,7 +39692,7 @@ parameters are a RESULT of the module parameters. -->
 the requested settings for a module instance. -->
   <parameter name="CORES_COUNT">
    <type>int</type>
-   <value>20</value>
+   <value>6</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -39700,7 +39700,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="FIXED_SIZE">
    <type>int</type>
-   <value>64</value>
+   <value>128</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -44511,5 +44511,5 @@ parameters are a RESULT of the module parameters. -->
   <version>23.1</version>
  </plugin>
  <reportVersion>23.1 991</reportVersion>
- <uniqueIdentifier>024283D0EE3E000001901D972F13</uniqueIdentifier>
+ <uniqueIdentifier>02424A1B991E000001902072B3F0</uniqueIdentifier>
 </EnsembleReport>

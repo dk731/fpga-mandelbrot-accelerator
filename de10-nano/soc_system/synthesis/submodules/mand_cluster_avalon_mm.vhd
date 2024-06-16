@@ -97,7 +97,8 @@ architecture RTL of mand_cluster_avalon_mm is
     type array_of_signed is array(integer range <>) of signed;
     type array_of_std_logic is array(integer range <>) of std_logic;
 
-    constant BYTE_ENABLE_SIZE : natural := AVALON_DATA_WIDTH / 8;
+    constant BYTE_ENABLE_SIZE_BYTES : natural := AVALON_DATA_WIDTH / 8;
+    constant ALL_REGISTERS_SIZE_BITS : natural := NORMAL_REG_SIZE * 10 + FLAG_REG_SIZE * 2 + FIXED_SIZE * 2;
 
     -- Register addresses
     constant CORES_COUNT_REG_ADDRESS : natural := 0;
@@ -157,8 +158,8 @@ architecture RTL of mand_cluster_avalon_mm is
     signal cores_busy_flags : std_logic_vector(CORES_COUNT - 1 downto 0) := (others => '0');
     signal cores_valid_flags : std_logic_vector(CORES_COUNT - 1 downto 0) := (others => '0');
 
-    signal avalon_read_mm : std_logic_vector(1024 - 1 downto 0) := (others => '0');
-    signal avalon_write_mm : std_logic_vector(1024 - 1 downto 0) := (others => '0');
+    signal avalon_read_mm : std_logic_vector(ALL_REGISTERS_SIZE_BITS - 1 downto 0) := (others => '0');
+    signal avalon_write_mm : std_logic_vector(ALL_REGISTERS_SIZE_BITS - 1 downto 0) := (others => '0');
 begin
 
     -- Registers
@@ -205,7 +206,7 @@ begin
             elsif avs_write = '1' then
                 -- Avalon-MM write operation
 
-                -- for i in 0 to BYTE_ENABLE_SIZE - 1 loop
+                -- for i in 0 to BYTE_ENABLE_SIZE_BYTES - 1 loop
                 --     if avs_byteenable(i) = '1' then
                 --         avalon_write_mm(avs_bit_address + 8 * i + 8 - 1 downto avs_bit_address + 8 * i) <= avs_writedata(8 * i + 8 - 1 downto 8 * i);
                 --     end if;
@@ -262,6 +263,8 @@ begin
             else
                 -- By default, return 0
                 avs_readdata <= (others => '0');
+
+                -- Clear reset signals from last cycle (To trigger them for just one cycle)
                 cores_start_next <= (others => '0');
                 cores_reset_next <= (others => '0');
             end if;
@@ -317,8 +320,8 @@ begin
     cluster_command_reg <= unsigned(avalon_write_mm(COMMAND_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto COMMAND_REG_ADDRESS));
     core_address_reg <= unsigned(avalon_write_mm(CORE_ADDRESS_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto CORE_ADDRESS_REG_ADDRESS));
 
+    core_itterations_max_reg <= unsigned(avalon_write_mm(CORE_ITTERATIONS_MAX_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto CORE_ITTERATIONS_MAX_REG_ADDRESS));
     core_x_reg <= signed(avalon_write_mm(CORE_X_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_X_REG_ADDRESS));
     core_y_reg <= signed(avalon_write_mm(CORE_Y_REG_ADDRESS + FIXED_SIZE - 1 downto CORE_Y_REG_ADDRESS));
-    core_itterations_max_reg <= unsigned(avalon_write_mm(CORE_ITTERATIONS_MAX_REG_ADDRESS + NORMAL_REG_SIZE - 1 downto CORE_ITTERATIONS_MAX_REG_ADDRESS));
 
 end architecture;

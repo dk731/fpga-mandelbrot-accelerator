@@ -2,7 +2,7 @@ set_global_assignment -entity "soc_system" -library "soc_system" -name IP_TOOL_N
 set_global_assignment -entity "soc_system" -library "soc_system" -name IP_TOOL_VERSION "23.1"
 set_global_assignment -entity "soc_system" -library "soc_system" -name IP_TOOL_ENV "Qsys"
 set_global_assignment -library "soc_system" -name SOPCINFO_FILE [file join $::quartus(qip_path) "../../soc_system.sopcinfo"]
-set_global_assignment -entity "soc_system" -library "soc_system" -name SLD_INFO "QSYS_NAME soc_system HAS_SOPCINFO 1 GENERATION_ID 1718483327"
+set_global_assignment -entity "soc_system" -library "soc_system" -name SLD_INFO "QSYS_NAME soc_system HAS_SOPCINFO 1 GENERATION_ID 1718531268"
 set_global_assignment -library "soc_system" -name MISC_FILE [file join $::quartus(qip_path) "../soc_system.cmp"]
 set_global_assignment -library "soc_system" -name SLD_FILE [file join $::quartus(qip_path) "soc_system.regmap"]
 set_global_assignment -library "soc_system" -name MISC_FILE [file join $::quartus(qip_path) "soc_system_hps_0_hps.svd"]
@@ -17,7 +17,7 @@ set_global_assignment -entity "soc_system" -library "soc_system" -name IP_COMPON
 set_global_assignment -entity "soc_system" -library "soc_system" -name IP_COMPONENT_REPORT_HIERARCHY "On"
 set_global_assignment -entity "soc_system" -library "soc_system" -name IP_COMPONENT_INTERNAL "Off"
 set_global_assignment -entity "soc_system" -library "soc_system" -name IP_COMPONENT_VERSION "MS4w"
-set_global_assignment -entity "soc_system" -library "soc_system" -name IP_COMPONENT_PARAMETER "QVVUT19HRU5FUkFUSU9OX0lE::MTcxODQ4MzMyNw==::QXV0byBHRU5FUkFUSU9OX0lE"
+set_global_assignment -entity "soc_system" -library "soc_system" -name IP_COMPONENT_PARAMETER "QVVUT19HRU5FUkFUSU9OX0lE::MTcxODUzMTI2OA==::QXV0byBHRU5FUkFUSU9OX0lE"
 set_global_assignment -entity "soc_system" -library "soc_system" -name IP_COMPONENT_PARAMETER "QVVUT19ERVZJQ0VfRkFNSUxZ::Q3ljbG9uZSBW::QXV0byBERVZJQ0VfRkFNSUxZ"
 set_global_assignment -entity "soc_system" -library "soc_system" -name IP_COMPONENT_PARAMETER "QVVUT19ERVZJQ0U=::NUNTRUJBNlUyM0k3::QXV0byBERVZJQ0U="
 set_global_assignment -entity "soc_system" -library "soc_system" -name IP_COMPONENT_PARAMETER "QVVUT19ERVZJQ0VfU1BFRURHUkFERQ==::Nw==::QXV0byBERVZJQ0VfU1BFRURHUkFERQ=="
@@ -838,8 +838,8 @@ set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -na
 set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
 set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_INTERNAL "Off"
 set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_VERSION "MS4w"
-set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_PARAMETER "Q09SRVNfQ09VTlQ=::MjA=::Q09SRVNfQ09VTlQ="
-set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_PARAMETER "RklYRURfU0laRQ==::NjQ=::RklYRURfU0laRQ=="
+set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_PARAMETER "Q09SRVNfQ09VTlQ=::Ng==::Q09SRVNfQ09VTlQ="
+set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_PARAMETER "RklYRURfU0laRQ==::MTI4::RklYRURfU0laRQ=="
 set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_PARAMETER "RklYRURfSU5URUdFUl9TSVpF::NQ==::RklYRURfSU5URUdFUl9TSVpF"
 set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_PARAMETER "QVZBTE9OX0RBVEFfV0lEVEg=::OA==::QVZBTE9OX0RBVEFfV0lEVEg="
 set_global_assignment -entity "mand_cluster_avalon_mm" -library "soc_system" -name IP_COMPONENT_PARAMETER "QVZBTE9OX0FERFJFU1NfV0lEVEg=::MTA=::QVZBTE9OX0FERFJFU1NfV0lEVEg="

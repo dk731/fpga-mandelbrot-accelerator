@@ -652,9 +652,9 @@
    enabled="1">
   <parameter name="AVALON_ADDRESS_WIDTH" value="10" />
   <parameter name="AVALON_DATA_WIDTH" value="8" />
-  <parameter name="CORES_COUNT" value="20" />
+  <parameter name="CORES_COUNT" value="6" />
   <parameter name="FIXED_INTEGER_SIZE" value="5" />
-  <parameter name="FIXED_SIZE" value="64" />
+  <parameter name="FIXED_SIZE" value="128" />
   <parameter name="FLAG_REG_SIZE" value="128" />
   <parameter name="NORMAL_REG_SIZE" value="64" />
  </module>
