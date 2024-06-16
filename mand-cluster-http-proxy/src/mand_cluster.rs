@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::io;
 use std::mem::size_of;
 
-const LOAD_DELAY: std::time::Duration = std::time::Duration::from_nanos(20);
+const LOAD_DELAY: std::time::Duration = std::time::Duration::from_nanos(100);
 
 // Reference to the MandCluster memory space
 #[repr(C)]

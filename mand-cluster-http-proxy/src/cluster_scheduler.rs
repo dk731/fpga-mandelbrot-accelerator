@@ -19,6 +19,7 @@ struct CalculationRequest {
     y: SchedulerP,
     max_itterations: SchedulerN,
 
+    attempts: u64,
     response_channel: tokio::sync::mpsc::Sender<Result<SchedulerN>>,
 }
 
@@ -113,19 +114,13 @@ impl ClusterScheduler {
                             task.response_channel
                                 .blocking_send(Ok(cluster.core_result()))
                                 .unwrap();
+                        } else if task.attempts < 10000 {
+                            task.attempts += 1;
+                            queue_tasks.push(task.clone());
                         } else {
-                            // Core was reseted
-                            // println!("Core was reseted: {}", core_addres);
-                            // println!("Cluster busy flags: {:b}", cluster.cores_busy_flags());
-                            // println!("Cluster valid flags: {:b}", cluster.cores_valid_flags());
-
-                            // task.response_channel
-                            //     .blocking_send(Err(anyhow::anyhow!("Core was reseted")))
-                            //     .unwrap();
-
-                            // queue_tasks.push(task.clone());
-                            // println!("Core was reseted, retrying next time");
-                            continue;
+                            task.response_channel
+                                .blocking_send(Err(anyhow::anyhow!("Core was reseted")))
+                                .unwrap();
                         }
                     }
 
@@ -172,8 +167,6 @@ impl ClusterScheduler {
                     }
                 }
             }
-
-            std::thread::sleep(std::time::Duration::from_millis(1));
         }
     }
 
@@ -191,6 +184,7 @@ impl ClusterScheduler {
                 y,
                 max_itterations,
                 response_channel: tx,
+                attempts: 0,
             })
             .await
             .unwrap();

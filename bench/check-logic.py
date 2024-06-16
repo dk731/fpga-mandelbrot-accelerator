@@ -11,10 +11,10 @@ import concurrent.futures
 import threading
 
 
-WIDTH = 1000
+WIDTH = 200
 ASPECT_RATIO = 4 / 3
 MAND_WIDTH = 3.4
-MAX_ITTERATIONS = 1000
+MAX_ITTERATIONS = 100
 
 HEIGHT = round(WIDTH / ASPECT_RATIO)
 MAND_HEIGHT = MAND_WIDTH / ASPECT_RATIO
@@ -37,20 +37,27 @@ def make_request(col, row):
     x_f = F(x)
     y_f = F(y)
 
-    resp = requests.post(
-        "http://fpga:8000/calculate",
-        json={
-            "x": hex(x_f),
-            "y": hex(y_f),
-            "max_itterations": hex(MAX_ITTERATIONS),
-        },
-    )
+    try:
 
-    if resp.status_code != 200:
-        print("Error response for calculation request: ", resp.text)
+        resp = requests.post(
+            "http://fpga:8000/calculate",
+            json={
+                "x": hex(x_f),
+                "y": hex(y_f),
+                "max_itterations": hex(MAX_ITTERATIONS),
+            },
+        )
+
+        if resp.status_code != 200:
+            print("Error response for calculation request: ", resp.text)
+            return None, None, None
+
+        itterations = int(resp.json()["itterations"], base=16) / MAX_ITTERATIONS
+
+    except Exception as e:
+        print("Error making request: ", e)
         return None, None, None
 
-    itterations = int(resp.json()["itterations"], base=16) / MAX_ITTERATIONS
     return row, col, itterations
 
 
