@@ -10,3 +10,8 @@ lazy_static = { version = "1.4" }
 tokio = { version = "1.38", features = ["full"] }
 libc = { version = "0.2" }
 anyhow = { version = "1", features = ["std"] }
+axum = { version = "0.7" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+bit-vec = { version = "0.6" }
+num = { version = "0.4" }

@@ -1,18 +1,18 @@
 use anyhow::Result;
-use lazy_static::lazy_static;
-use libc::{c_void, mmap, open, MAP_FAILED, MAP_PRIVATE, O_RDONLY, PROT_READ};
+use libc::{c_void, mmap, open, MAP_FAILED, MAP_SHARED, O_RDWR, O_SYNC, PROT_READ, PROT_WRITE};
 use std::ffi::CString;
+use std::fmt::Debug;
 use std::io;
 use std::mem::size_of;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 // Reference to the MandCluster memory space
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
 struct MandClusterInner<N, F, P>
 where
-    N: Copy,
-    F: Copy,
-    P: Copy,
+    N: Copy + Debug,
+    F: Copy + Debug,
+    P: Copy + Debug,
 {
     // Metadata registers
     pub cores_count: N,
@@ -39,11 +39,11 @@ where
 
 pub struct MandCluster<'a, N, F, P>
 where
-    N: Copy,
-    F: Copy,
-    P: Copy,
+    N: Copy + Debug,
+    F: Copy + Debug,
+    P: Copy + Debug,
 {
-    __inner: &'a MandClusterInner<N, F, P>,
+    __inner: &'a mut MandClusterInner<N, F, P>,
     fd: i32,
 }
 
@@ -51,32 +51,33 @@ where
 const HPS_FPGA_BRIDGE_BASE: i64 = 0xC0000000;
 
 #[cfg(target_pointer_width = "32")]
-const HPS_FPGA_BRIDGE_BASE: i32 = 0xC0000000_u32 as i32;
+const HPS_FPGA_BRIDGE_BASE: i32 = -1073741824i32;
+// const HPS_FPGA_BRIDGE_BASE: i32 = 0xC0000000;
 
 impl<N, F, P> MandCluster<'_, N, F, P>
 where
-    N: Copy,
-    F: Copy,
-    P: Copy,
+    N: Copy + Debug,
+    F: Copy + Debug,
+    P: Copy + Debug,
 {
     // UNSAFE!
     pub fn new() -> Result<Self> {
-        let mem_file = CString::new("/dev/mem").unwrap();
-        let fd = unsafe { open(mem_file.as_ptr(), O_RDONLY) };
-
-        // This is not really correct, but will be fine
-        let current_configuration_length = size_of::<Self>();
+        let mem_file: CString = CString::new("/dev/mem").unwrap();
+        let fd = unsafe { open(mem_file.as_ptr(), O_RDWR | O_SYNC) };
 
         if fd < 0 {
             return Err(anyhow::anyhow!("Failed to open /dev/mem"));
         }
 
+        // This is not really correct, but will be fine
+        let current_configuration_length = size_of::<MandClusterInner<N, F, P>>();
+
         let ptr = unsafe {
             mmap(
                 std::ptr::null_mut(),
                 current_configuration_length,
-                PROT_READ,
-                MAP_PRIVATE,
+                PROT_READ | PROT_WRITE,
+                MAP_SHARED,
                 fd,
                 HPS_FPGA_BRIDGE_BASE,
             )
@@ -84,13 +85,26 @@ where
 
         if ptr == MAP_FAILED {
             return Err(anyhow::anyhow!(
-                "Was not able to map cluster memory, mmap failed: {}",
-                io::Error::last_os_error()
+                "Was not able to map cluster memory, mmap failed: {}. Pointer: {:?}",
+                io::Error::last_os_error(),
+                ptr
             ));
         }
 
-        let cluster: &MandClusterInner<N, F, P> =
-            unsafe { &*(ptr as *const MandClusterInner<N, F, P>) };
+        println!("Raw Pointer: {:?}", ptr);
+
+        let cluster: &mut MandClusterInner<N, F, P> =
+            unsafe { &mut *(ptr as *mut MandClusterInner<N, F, P>) };
+
+        let qwe: *const MandClusterInner<N, F, P> = cluster;
+        let void_ptr: *mut c_void = qwe as *mut c_void;
+
+        println!("void_ptr: {:?}", void_ptr);
+
+        let qwe: *const N = &cluster.command;
+        let void_ptr: *mut c_void = qwe as *mut c_void;
+
+        println!("Command raw ptr: {:?}", void_ptr);
 
         Ok(Self {
             __inner: cluster,
@@ -101,9 +115,9 @@ where
 
 impl<N, F, P> Drop for MandCluster<'_, N, F, P>
 where
-    N: Copy,
-    F: Copy,
-    P: Copy,
+    N: Copy + Debug,
+    F: Copy + Debug,
+    P: Copy + Debug,
 {
     fn drop(&mut self) {
         // Convert the reference to a raw pointer
@@ -113,7 +127,7 @@ where
         let void_ptr: *mut c_void = raw_ptr as *mut c_void;
 
         // Unmap the memory
-        let result = unsafe { libc::munmap(void_ptr, size_of::<Self>()) };
+        let result = unsafe { libc::munmap(void_ptr, size_of::<MandClusterInner<N, F, P>>()) };
         if result != 0 {
             eprintln!(
                 "Was not able to munmap mand cluster, failed: {}",
@@ -132,13 +146,40 @@ where
     }
 }
 
-// Getters
+// Getters and setters
 impl<N, F, P> MandCluster<'_, N, F, P>
 where
-    N: Copy,
-    F: Copy,
-    P: Copy,
+    N: Copy + Debug,
+    F: Copy + Debug,
+    P: Copy + Debug,
 {
+    // Setters
+    pub fn load_command(&mut self, command: N) {
+        self.__inner.command = command;
+        std::thread::sleep(std::time::Duration::from_micros(1));
+    }
+
+    pub fn load_core_address(&mut self, core_address: N) {
+        self.__inner.core_address = core_address;
+        std::thread::sleep(std::time::Duration::from_micros(1));
+    }
+
+    pub fn load_core_x(&mut self, core_x: P) {
+        self.__inner.core_x = core_x;
+        std::thread::sleep(std::time::Duration::from_micros(1));
+    }
+
+    pub fn load_core_y(&mut self, core_y: P) {
+        self.__inner.core_y = core_y;
+        std::thread::sleep(std::time::Duration::from_micros(1));
+    }
+
+    pub fn load_core_itterations_max(&mut self, core_itterations_max: N) {
+        self.__inner.core_itterations_max = core_itterations_max;
+        std::thread::sleep(std::time::Duration::from_micros(1));
+    }
+
+    // Getters
     pub fn cores_count(&self) -> N {
         self.__inner.cores_count
     }

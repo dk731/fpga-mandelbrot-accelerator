@@ -73,7 +73,7 @@ int main(int argc, char **argv)
     printf("Fixed Size: %" PRIu64 "\n", cluster->fixed_size);
     printf("Fixed Integer Size: %" PRIu64 "\n", cluster->fixed_integer_size);
 
-    printf("Command: %" PRIu64 "\n", cluster->command);
+    printf("\nCommand: %" PRIu64 "\n", cluster->command);
     printf("Command Status: %" PRIu64 "\n", cluster->command_status);
     printf("Core Address: %" PRIu64 "\n", cluster->core_address);
     printf("Core Busy Flags:");
@@ -82,63 +82,28 @@ int main(int argc, char **argv)
     printf("Core Valid Flags:");
     printf_bits(cluster->cores_valid_flag, 128);
 
-    printf("Core Result: %" PRIu64 "\n", cluster->core_result);
+    printf("\nCore Result: %" PRIu64 "\n", cluster->core_result);
     printf("Core Busy: %" PRIu64 "\n", cluster->core_busy);
     printf("Core Valid: %" PRIu64 "\n", cluster->core_valid);
 
-    printf("Core Itterations Size: %" PRIu64 "\n", cluster->core_max_itterations);
-
-    cluster->core_max_itterations = 10000000;
-    cluster->core_x[4] = 0xff;
-    cluster->core_x[5] = 0xff;
-    cluster->core_y[4] = 0xff;
-    cluster->core_y[5] = 0xff;
-
-    printf("");
-
-    // Start core
-    cluster->command = 2;
-    printf("Started core.\n");
-
+    printf("\nCore Max Itterations: %" PRIu64 "\n", cluster->core_max_itterations);
     printf("Core X:");
     printf_bits(cluster->core_x, 128);
 
     printf("Core Y:");
     printf_bits(cluster->core_y, 128);
 
-    printf("Command Status: %" PRIu64 "\n", cluster->command_status);
+    // printf("Starting cores reset.\n");
+    // for (uint8_t i = 0; i < cluster->cores_count; i++)
+    // {
+    //     cluster->core_address = i;
+    //     cluster->command = 0x03;
 
-    printf("Cores Busy Flag: %s\n", cluster->cores_busy_flag);
-    printf("Cores Valid Flag: %s\n\n", cluster->cores_valid_flag);
-
-    time_t start = time(NULL);
-
-    while (cluster->cores_busy_flag[0] == 1)
-    {
-        // printf("Core is busy.\n");
-    }
-
-    time_t end = time(NULL);
-    double elapsed = difftime(end, start);
-
-    printf("Core is done.\n");
-
-    // Load result
-    cluster->command = 1;
-    printf("Started load command.\n");
-    printf("Command Status: %" PRIu64 "\n", cluster->command_status);
-
-    printf("Core Busy Flags:");
-    printf_bits(cluster->cores_busy_flag, 128);
-
-    printf("Core Valid Flags:");
-    printf_bits(cluster->cores_valid_flag, 128);
-
-    printf("Core Result: %" PRIu64 "\n", cluster->core_result);
-    printf("Core Busy: %" PRIu64 "\n", cluster->core_busy);
-    printf("Core Valid: %" PRIu64 "\n", cluster->core_valid);
-    printf("Finished in: %f seconds.\n", elapsed);
-    printf("Itterations speed: %f Ms/s.\n", elapsed / cluster->core_max_itterations * 1000000);
+    //     if (cluster->command_status != 0x00)
+    //     {
+    //         printf("Core %d reset failed with status: %lld. Last executed command: %lld.\n", i, cluster->command_status, cluster->command);
+    //     }
+    // }
 
     result = munmap(bridge_map, BRIDGE_SPAN);
 
