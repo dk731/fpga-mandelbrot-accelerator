@@ -93,18 +93,6 @@ int main(int argc, char **argv)
     printf("Core Y:");
     printf_bits(cluster->core_y, 128);
 
-    // printf("Starting cores reset.\n");
-    // for (uint8_t i = 0; i < cluster->cores_count; i++)
-    // {
-    //     cluster->core_address = i;
-    //     cluster->command = 0x03;
-
-    //     if (cluster->command_status != 0x00)
-    //     {
-    //         printf("Core %d reset failed with status: %lld. Last executed command: %lld.\n", i, cluster->command_status, cluster->command);
-    //     }
-    // }
-
     result = munmap(bridge_map, BRIDGE_SPAN);
 
     if (result < 0)
